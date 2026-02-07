@@ -2,33 +2,51 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // --- COMPLETE 105-DAY INTERLEAVED CURRICULUM ---
 const CURRICULUM_105 = [
-    { d: 1, c: "TÜRKÇE", n: "Sözcükte Anlam", t: 60, s: false, pdf: 'TURKCE_345.pdf' },
-    { d: 2, c: "MATEMATİK", n: "Temel Kavramlar", t: 100, s: true, pdf: 'MAT_345.pdf' },
-    { d: 3, c: "FİZİK", n: "Fizik Bilimine Giriş", t: 30, s: false, pdf: 'FIZIK_345.pdf' },
-    { d: 4, c: "TÜRKÇE", n: "Cümlede Anlam", t: 60, s: false, pdf: 'TURKCE_345.pdf' },
-    { d: 5, c: "MATEMATİK", n: "Sayı Basamakları", t: 60, s: false, pdf: 'MAT_BS.pdf' },
-    { d: 6, c: "KİMYA", n: "Atom Yapısı", t: 70, s: true, pdf: 'KIMYA_345.pdf' },
-    { d: 7, c: "SİSTEM", n: "HAFTALIK TEKRAR", t: 0, isRest: true },
-    { d: 8, c: "BİYOLOJİ", n: "Canlıların Ortak Özellikleri", t: 30, s: false, pdf: 'BIYOLOJI_345.pdf' },
-    { d: 9, c: "TÜRKÇE", n: "Paragrafta Anlatım Teknikleri", t: 100, s: true, pdf: 'PARAGRAF_LIMIT.pdf' },
-    { d: 10, c: "MATEMATİK", n: "Bölme ve Bölünebilme", t: 60, s: false, pdf: 'MAT_345.pdf' },
-    { d: 11, c: "GEOMETRİ", n: "Doğruda ve Üçgende Açılar", t: 80, s: true, pdf: 'GEO_3D.pdf' },
-    { d: 12, c: "FİZİK", n: "Madde ve Özellikleri", t: 40, s: false, pdf: 'FIZIK_345.pdf' },
-    { d: 13, c: "TÜRKÇE", n: "Paragrafta Ana Düşünce", t: 150, s: true, pdf: 'PARAGRAF_LIMIT.pdf' },
-    { d: 14, c: "SİSTEM", n: "HAFTALIK TEKRAR", t: 0, isRest: true },
-    { d: 15, c: "MATEMATİK", n: "EBOB - EKOK", t: 50, s: false, pdf: 'MAT_345.pdf' },
+    { d: 1, c: "TÜRKÇE", n: "Sözcükte Anlam", t: 60, s: false, pdf: 'TURKCE_345' },
+    { d: 2, c: "MATEMATİK", n: "Temel Kavramlar", t: 100, s: true, pdf: 'MAT_345' },
+    { d: 3, c: "FİZİK", n: "Fizik Bilimine Giriş", t: 30, s: false, pdf: 'FIZIK_345' },
+    { d: 4, c: "TÜRKÇE", n: "Cümlede Anlam", t: 60, s: false, pdf: 'TURKCE_345' },
+    { d: 5, c: "MATEMATİK", n: "Sayı Basamakları", t: 60, s: false, pdf: 'MAT_BS' },
+    { d: 6, c: "KİMYA", n: "Atom Yapısı", t: 70, s: true, pdf: 'KIMYA_345' },
+    { d: 7, c: "SİSTEM", n: "HAFTALIK ANALİZ", t: 0, isRest: true },
+    { d: 8, c: "BİYOLOJİ", n: "Canlıların Ortak Özellikleri", t: 30, s: false, pdf: 'BIYO_345' },
+    { d: 9, c: "TÜRKÇE", n: "Paragrafta Anlatım", t: 100, s: true, pdf: 'PARAGRAF_LIMIT' },
+    { d: 10, c: "MATEMATİK", n: "Bölme ve Bölünebilme", t: 60, s: false, pdf: 'MAT_345' },
+    { d: 11, c: "GEOMETRİ", n: "Üçgende Açılar", t: 80, s: true, pdf: 'GEO_3D_VDD' },
+    { d: 12, c: "FİZİK", n: "Madde Özellikleri", t: 40, s: false, pdf: 'FIZIK_AYDIN' },
+    { d: 13, c: "TÜRKÇE", n: "Paragrafta Ana Düşünce", t: 150, s: true, pdf: 'PARAGRAF_PARAF' },
+    { d: 14, c: "SİSTEM", n: "HAFTALIK ANALİZ", t: 0, isRest: true },
     // ... continuing to day 105
-    { d: 105, c: "SİSTEM", n: "SINAV GÜNÜ - 20 HAZİRAN 2026", t: 0, isRest: true }
+];
+
+const PDF_CATEGORIES = [
+    { id: 'MAT_345', name: 'Matematik 3-4-5' },
+    { id: 'MAT_BS', name: 'Matematik Başarı Serisi' },
+    { id: 'MAT_PROB', name: 'Matematik Problemler' },
+    { id: 'TURKCE_345', name: 'Türkçe 3-4-5' },
+    { id: 'PARAGRAF_LIMIT', name: 'Paragraf Limit' },
+    { id: 'PARAGRAF_PARAF', name: 'Paragraf Paraf IQ' },
+    { id: 'GEO_3D_VDD', name: 'Geometri 3D VDD' },
+    { id: 'GEO_BS', name: 'Geometri Başarı Serisi' },
+    { id: 'FIZIK_345', name: 'Fizik 3-4-5' },
+    { id: 'FIZIK_AYDIN', name: 'Fizik Aydın' },
+    { id: 'KIMYA_345', name: 'Kimya 3-4-5' },
+    { id: 'KIMYA_PALME', name: 'Kimya Palme' },
+    { id: 'BIYO_345', name: 'Biyoloji 3-4-5' },
+    { id: 'BIYO_BIYOTIK', name: 'Biyoloji Biyotik' },
+    { id: 'SOSYAL_345', name: 'Sosyal 3-4-5' },
+    { id: 'COG_BS', name: 'Coğrafya Başarı Serisi' },
+    { id: 'FEL_LIMIT_EL', name: 'Felsefe Limit Elin' },
+    { id: 'DIN_LIMIT_EL', name: 'Din Limit Elin' },
+    { id: 'TARIH_345', name: 'Tarih 3-4-5' }
 ];
 
 export default function App() {
     const [state, setState] = useState(() => {
-        const saved = localStorage.getItem('sovereign_v10');
+        const saved = localStorage.getItem('cloud_citadel_v11');
         return saved ? JSON.parse(saved) : {
-            githubSetup: false,
-            githubUsername: '',
-            githubRepo: '',
-            githubToken: '',
+            driveSetup: false,
+            fileIdMap: {}, // { MAT_345: 'abc123...', TURKCE_345: 'def456...', ... }
             dayIdx: 0,
             phase: 0,
             videoId: null,
@@ -40,85 +58,40 @@ export default function App() {
     const [toast, setToast] = useState(null);
     const [tool, setTool] = useState('pen');
     const [pdfUrl, setPdfUrl] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [currentFileId, setCurrentFileId] = useState('');
+    const [currentCategory, setCurrentCategory] = useState('');
 
     const canvasRef = useRef(null);
     const pdfContainerRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem('sovereign_v10', JSON.stringify(state));
+        localStorage.setItem('cloud_citadel_v11', JSON.stringify(state));
     }, [state]);
-
-    useEffect(() => {
-        return () => {
-            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        };
-    }, [pdfUrl]);
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(null), 3000);
     };
 
-    const handleGitHubSetup = () => {
-        if (!state.githubUsername || !state.githubRepo || !state.githubToken) {
-            showToast("⚠️ Tüm bilgileri doldur!");
-            return;
-        }
-        setState({ ...state, githubSetup: true });
-        showToast("🔒 Mühimmat deposu bağlandı!");
+    const handleFileIdInput = (category, fileId) => {
+        setState(prev => ({
+            ...prev,
+            fileIdMap: { ...prev.fileIdMap, [category]: fileId }
+        }));
     };
 
-    const fetchPDFFromGitHub = async (filename) => {
-        setLoading(true);
-        try {
-            const response = await fetch(
-                `https://api.github.com/repos/${state.githubUsername}/${state.githubRepo}/contents/${filename}`,
-                {
-                    headers: {
-                        'Authorization': `token ${state.githubToken}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                }
-            );
+    const handleDriveSetup = () => {
+        const required = ['MAT_345', 'TURKCE_345', 'PARAGRAF_LIMIT', 'GEO_3D_VDD', 'FIZIK_345', 'KIMYA_345', 'BIYO_345'];
+        const missing = required.filter(cat => !state.fileIdMap[cat]);
 
-            if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Decode base64 content
-            const binaryString = atob(data.content);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-
-            const blob = new Blob([bytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-
-            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-            setPdfUrl(url);
-
-            // Initialize canvas
-            setTimeout(() => {
-                if (canvasRef.current && pdfContainerRef.current) {
-                    const canvas = canvasRef.current;
-                    const container = pdfContainerRef.current;
-                    canvas.width = container.offsetWidth;
-                    canvas.height = container.offsetHeight;
-                }
-            }, 500);
-
-            showToast("📖 PDF yüklendi");
-        } catch (error) {
-            showToast(`❌ Hata: ${error.message}`);
-            console.error('GitHub fetch error:', error);
-        } finally {
-            setLoading(false);
+        if (missing.length > 0) {
+            showToast(`⚠️ Eksik: ${missing.join(', ')}`);
+            return;
         }
+
+        setState({ ...state, driveSetup: true });
+        showToast("🔒 Drive bağlandı!");
     };
 
     const extractVideoID = (url) => {
@@ -139,11 +112,29 @@ export default function App() {
 
     const openPDF = () => {
         const current = CURRICULUM_105[state.dayIdx];
-        fetchPDFFromGitHub(current.pdf);
+        const fileId = state.fileIdMap[current.pdf];
+
+        if (!fileId) {
+            showToast("⚠️ Bu PDF için File ID girilmemiş!");
+            return;
+        }
+
+        const driveUrl = `https://docs.google.com/viewer?srcid=${fileId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`;
+        setPdfUrl(driveUrl);
+
+        setTimeout(() => {
+            if (canvasRef.current && pdfContainerRef.current) {
+                const canvas = canvasRef.current;
+                const container = pdfContainerRef.current;
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+            }
+        }, 500);
+
+        showToast("📖 PDF yüklendi");
     };
 
     const handleDayComplete = () => {
-        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(null);
 
         const record = {
@@ -186,7 +177,7 @@ export default function App() {
         const pos = getPosition(e, rect);
 
         if (tool === 'pen') {
-            ctx.strokeStyle = '#000';
+            ctx.strokeStyle = '#ff0000';
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.lineTo(pos.x, pos.y);
@@ -214,55 +205,37 @@ export default function App() {
     const current = CURRICULUM_105[state.dayIdx];
     const progress = Math.round((state.dayIdx / 105) * 100);
 
-    // GITHUB SETUP SCREEN
-    if (!state.githubSetup) {
+    // GOOGLE DRIVE SETUP SCREEN
+    if (!state.driveSetup) {
         return (
             <div style={s.base}>
                 <div style={s.setupBox}>
-                    <h1 style={s.setupTitle}>🔒 MÜHİMMAT DEPOSU KONTROLÜ</h1>
+                    <h1 style={s.setupTitle}>☁️ GOOGLE DRIVE BAĞLANTI</h1>
                     <p style={s.setupDesc}>
-                        Tünel kilitli. Açılması için GitHub Private Repo bağlantısı ZORUNLU.<br />
-                        <strong>"Mühimmatı olmayan asker cepheye giremez."</strong>
+                        Drive Klasörü: <a href="https://drive.google.com/drive/folders/1A05kx1ewqSajhDP9pnI4LDSgZmFsjC2V" target="_blank" style={s.link}>Klasörü Aç</a><br />
+                        Her PDF için File ID'yi gir. (Sağ tık → Paylaş → Link kopyala → ID'yi çıkar)
                     </p>
 
-                    <div style={s.form}>
-                        <div style={s.formGroup}>
-                            <label style={s.label}>GitHub Username</label>
-                            <input
-                                type="text"
-                                placeholder="örn: stark4280"
-                                value={state.githubUsername}
-                                onChange={(e) => setState({ ...state, githubUsername: e.target.value })}
-                                style={s.input}
-                            />
-                        </div>
-
-                        <div style={s.formGroup}>
-                            <label style={s.label}>Private Repo Name</label>
-                            <input
-                                type="text"
-                                placeholder="örn: tyt-kutuphane"
-                                value={state.githubRepo}
-                                onChange={(e) => setState({ ...state, githubRepo: e.target.value })}
-                                style={s.input}
-                            />
-                        </div>
-
-                        <div style={s.formGroup}>
-                            <label style={s.label}>Personal Access Token (PAT)</label>
-                            <input
-                                type="password"
-                                placeholder="ghp_xxxxxxxxxxxx"
-                                value={state.githubToken}
-                                onChange={(e) => setState({ ...state, githubToken: e.target.value })}
-                                style={s.input}
-                            />
-                            <small style={s.hint}>Settings → Developer → Personal Access Tokens → Classic</small>
-                        </div>
+                    <div style={s.grid}>
+                        {PDF_CATEGORIES.map(cat => (
+                            <div key={cat.id} style={s.mapBox}>
+                                <div style={s.catName}>{cat.name}</div>
+                                <input
+                                    type="text"
+                                    placeholder="File ID (örn: 1A05kx1e...)"
+                                    value={state.fileIdMap[cat.id] || ''}
+                                    onChange={(e) => handleFileIdInput(cat.id, e.target.value)}
+                                    style={{
+                                        ...s.input,
+                                        borderColor: state.fileIdMap[cat.id] ? '#00ff88' : '#333'
+                                    }}
+                                />
+                            </div>
+                        ))}
                     </div>
 
-                    <button onClick={handleGitHubSetup} style={s.startBtn}>
-                        🚀 DEPOYU BAĞLA VE TÜNELİ AÇ
+                    <button onClick={handleDriveSetup} style={s.startBtn}>
+                        🚀 BAĞLANTIYI TAMAMLA
                     </button>
                 </div>
             </div>
@@ -277,7 +250,7 @@ export default function App() {
             <div style={s.header}>
                 <span style={s.dayCounter}>GÜN {current.d} / 105</span>
                 <span style={s.progressLabel}>{progress}%</span>
-                <span style={s.repo}>📦 {state.githubRepo}</span>
+                <span style={s.cloud}>☁️ Drive</span>
             </div>
 
             <div style={s.main}>
@@ -318,8 +291,8 @@ export default function App() {
                             {state.phase === 1 && (
                                 <>
                                     {!pdfUrl ? (
-                                        <button style={s.pdfBtn} onClick={openPDF} disabled={loading}>
-                                            {loading ? '⏳ Yükleniyor...' : `📖 PDF'İ GITHUB'DAN ÇEK`}
+                                        <button style={s.pdfBtn} onClick={openPDF}>
+                                            📖 PDF'İ DRIVE'DAN AÇ
                                         </button>
                                     ) : (
                                         <>
@@ -342,10 +315,10 @@ export default function App() {
                                             </div>
 
                                             <div style={s.pdfContainer} ref={pdfContainerRef}>
-                                                <embed
+                                                <iframe
                                                     src={pdfUrl}
-                                                    type="application/pdf"
                                                     style={s.pdfViewer}
+                                                    title="Drive PDF"
                                                 />
                                                 <canvas
                                                     ref={canvasRef}
@@ -377,7 +350,7 @@ export default function App() {
                         </>
                     ) : (
                         <button style={s.restBtn} onClick={handleDayComplete}>
-                            ⏭ TEKRARtest YAPILDI
+                            ⏭ ANALİZ YAPILDI
                         </button>
                     )}
                 </div>
@@ -402,23 +375,21 @@ export default function App() {
 const s = {
     base: { minHeight: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column' },
 
-    // Setup
-    setupBox: { width: '100%', maxWidth: '600px', margin: 'auto', padding: '40px 30px', textAlign: 'center' },
+    setupBox: { width: '100%', maxWidth: '900px', margin: 'auto', padding: '40px 30px', textAlign: 'center', overflowY: 'auto', maxHeight: '100vh' },
     setupTitle: { fontSize: '24px', letterSpacing: '3px', marginBottom: '15px', color: '#00ff88' },
-    setupDesc: { fontSize: '13px', color: '#666', marginBottom: '40px', lineHeight: '1.8' },
-    form: { display: 'flex', flexDirection: 'column', gap: '25px', marginBottom: '40px', textAlign: 'left' },
-    formGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    label: { fontSize: '11px', color: '#888', fontWeight: 'bold', textTransform: 'uppercase' },
-    input: { padding: '14px', background: '#0a0a0a', border: '2px solid #222', color: '#fff', borderRadius: '8px', fontSize: '15px', outline: 'none' },
-    hint: { fontSize: '10px', color: '#555' },
-    startBtn: { width: '100%', padding: '20px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '10px', cursor: 'pointer' },
+    setupDesc: { fontSize: '13px', color: '#666', marginBottom: '30px', lineHeight: '1.8' },
+    link: { color: '#00ff88', textDecoration: 'underline' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px', marginBottom: '40px' },
+    mapBox: { padding: '15px', border: '1px solid #222', borderRadius: '8px', textAlign: 'left' },
+    catName: { fontSize: '11px', color: '#888', marginBottom: '8px', fontWeight: 'bold' },
+    input: { width: '100%', padding: '12px', background: '#0a0a0a', border: '2px solid #333', color: '#fff', borderRadius: '6px', fontSize: '13px', outline: 'none' },
+    startBtn: { width: '100%', maxWidth: '400px', padding: '20px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '10px', cursor: 'pointer' },
 
-    // Main
     toast: { position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#00ff88', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', zIndex: 1000 },
     header: { padding: '25px 30px', borderBottom: '1px solid #111', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666' },
     dayCounter: { fontWeight: 'bold', color: '#00ff88' },
     progressLabel: {},
-    repo: { color: '#555' },
+    cloud: { color: '#555' },
 
     main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px' },
     subjectBox: { textAlign: 'center', marginBottom: '30px' },
@@ -440,7 +411,7 @@ const s = {
 
     pdfContainer: { position: 'relative', width: '100%', height: '500px', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' },
     pdfViewer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' },
-    canvasLayer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none' },
+    canvasLayer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', pointerEvents: 'all' },
 
     doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     finishBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
