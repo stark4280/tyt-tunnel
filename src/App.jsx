@@ -64,8 +64,9 @@ export default function App() {
     const [url, setUrl] = useState('');
     const [toast, setToast] = useState(null);
     const [tool, setTool] = useState('pen');
-    const [penMode, setPenMode] = useState(false); // Kalem modu aktif mi?
+    const [penMode, setPenMode] = useState(false);
     const [pdfUrl, setPdfUrl] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const canvasRef = useRef(null);
     const pdfContainerRef = useRef(null);
@@ -96,7 +97,7 @@ export default function App() {
         showToast("🔒 Video kilitlendi");
     };
 
-    const openPDF = () => {
+    const openPDF = async () => {
         const current = CURRICULUM_105[state.dayIdx];
         const fileId = DEFAULT_FILE_IDS[current.pdf];
 
@@ -105,23 +106,41 @@ export default function App() {
             return;
         }
 
-        // Google Drive direkt preview - daha iyi çalışır
-        const driveUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        setPdfUrl(driveUrl);
+        setLoading(true);
+        showToast("📥 PDF indiriliyor...");
 
-        setTimeout(() => {
-            if (canvasRef.current && pdfContainerRef.current) {
-                const canvas = canvasRef.current;
-                const container = pdfContainerRef.current;
-                canvas.width = container.offsetWidth;
-                canvas.height = container.offsetHeight;
-            }
-        }, 500);
+        try {
+            // Google Drive direkt download URL (boyut sınırı yok)
+            const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
 
-        showToast("📖 PDF yüklendi");
+            const response = await fetch(downloadUrl);
+            if (!response.ok) throw new Error('Download failed');
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            setPdfUrl(blobUrl);
+
+            setTimeout(() => {
+                if (canvasRef.current && pdfContainerRef.current) {
+                    const canvas = canvasRef.current;
+                    const container = pdfContainerRef.current;
+                    canvas.width = container.offsetWidth;
+                    canvas.height = container.offsetHeight;
+                }
+            }, 500);
+
+            showToast("✅ PDF yüklendi");
+        } catch (error) {
+            showToast("❌ PDF yüklenemedi!");
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDayComplete = () => {
+        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(null);
         setPenMode(false);
 
@@ -242,8 +261,8 @@ export default function App() {
                             {state.phase === 1 && (
                                 <>
                                     {!pdfUrl ? (
-                                        <button style={s.pdfBtn} onClick={openPDF}>
-                                            📖 PDF'İ DRIVE'DAN AÇ
+                                        <button style={s.pdfBtn} onClick={openPDF} disabled={loading}>
+                                            {loading ? "⏳ İndiriliyor..." : "📖 PDF'İ AÇ (Drive Download)"}
                                         </button>
                                     ) : (
                                         <>
@@ -281,11 +300,10 @@ export default function App() {
                                             </div>
 
                                             <div style={s.pdfContainer} ref={pdfContainerRef}>
-                                                <iframe
+                                                <embed
                                                     src={pdfUrl}
+                                                    type="application/pdf"
                                                     style={s.pdfViewer}
-                                                    title="Drive PDF"
-                                                    allow="autoplay"
                                                 />
                                                 <canvas
                                                     ref={canvasRef}
@@ -366,7 +384,6 @@ const s = {
     lockBtn: { padding: '18px', background: 'linear-gradient(135deg, #fff, #e0e0e0)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     pdfBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
 
-    // FLOATING TOOLBAR (Yüzen araç kutusu)
     floatingToolbar: {
         position: 'fixed',
         bottom: '30px',
