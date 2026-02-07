@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// --- DEFAULT GOOGLE DRIVE FILE IDS ---
+const DEFAULT_FILE_IDS = {
+    BIYO_345: '1hVYQXCZ4Un_-2laHeRptr2nz2qbn8O3l',
+    BIYO_BIYOTIK: '1kF2Za3aldzaKKZXDrTakQy5b1HxPFxxo',
+    COG_BS: '1C67fvqhnEIEyBM3GZ_iULGymjz8UMCSs',
+    DIN_LIMIT_EL: '1rcp3h_EepUMrr-TtNhTtZejOPHKywHl3',
+    FEL_LIMIT_EL: '1yzStR0xOB3MaYGXxqcX9ilEk0jodMbSV',
+    FIZIK_345: '1fsPOHuOJKaN_j-xvVCBgwZHr9cSlMmGo',
+    FIZIK_AYDIN: '1wBWL0HHv115BrhZ_Mw52DJwhWKD2J13X',
+    GEO_3D_VDD: '13SmSqdg4sPmauiHOMelfvlQzLatC_0xI',
+    GEO_BS: '1wNL5RntoQOfOUhX_qPXHtzMdebspcx0J',
+    KIMYA_345: '1xyEEgbsjCI2ESwjM6JrrmjyhZdhfaZAW',
+    KIMYA_PALME: '1f8S3UISPFtZfDO4uQV7xKnoRxv9azKJM',
+    MAT_345: '1Nuh2j1gVonFs-k6iHV2hlT-wTIetvH_V',
+    MAT_PROB: '1bvQrIB6tFBIRPovOaIwbmnUXjq5K2Sax',
+    MAT_BS: '10Lij-uDXZbCatfX3WWCIx5a6-tJ4UGw3',
+    PARAGRAF_LIMIT: '1YQJJdgyF41Sq_cFAjU8G5uRvdOxdQAuS',
+    PARAGRAF_PARAF: '1z0yilGIdj7Q09rHZtjuCJVB8mHLYjt6c',
+    SOSYAL_345: '1IbMyaGMzAOKvJyXwOLdhZ5PVlWGQz-pP',
+    TURKCE_345: '1aHW_SZ6j3hpRjEbXyJfwmDnKEFdgIYNs',
+    TURKCE_HIZ: '161bXwF7ZE_sJyCft0DamMzTZGlNM7oCj'
+};
+
 // --- COMPLETE 105-DAY INTERLEAVED CURRICULUM ---
 const CURRICULUM_105 = [
     { d: 1, c: "TÜRKÇE", n: "Sözcükte Anlam", t: 60, s: false, pdf: 'TURKCE_345' },
@@ -16,37 +39,21 @@ const CURRICULUM_105 = [
     { d: 12, c: "FİZİK", n: "Madde Özellikleri", t: 40, s: false, pdf: 'FIZIK_AYDIN' },
     { d: 13, c: "TÜRKÇE", n: "Paragrafta Ana Düşünce", t: 150, s: true, pdf: 'PARAGRAF_PARAF' },
     { d: 14, c: "SİSTEM", n: "HAFTALIK ANALİZ", t: 0, isRest: true },
-    // ... continuing to day 105
-];
-
-const PDF_CATEGORIES = [
-    { id: 'MAT_345', name: 'Matematik 3-4-5' },
-    { id: 'MAT_BS', name: 'Matematik Başarı Serisi' },
-    { id: 'MAT_PROB', name: 'Matematik Problemler' },
-    { id: 'TURKCE_345', name: 'Türkçe 3-4-5' },
-    { id: 'PARAGRAF_LIMIT', name: 'Paragraf Limit' },
-    { id: 'PARAGRAF_PARAF', name: 'Paragraf Paraf IQ' },
-    { id: 'GEO_3D_VDD', name: 'Geometri 3D VDD' },
-    { id: 'GEO_BS', name: 'Geometri Başarı Serisi' },
-    { id: 'FIZIK_345', name: 'Fizik 3-4-5' },
-    { id: 'FIZIK_AYDIN', name: 'Fizik Aydın' },
-    { id: 'KIMYA_345', name: 'Kimya 3-4-5' },
-    { id: 'KIMYA_PALME', name: 'Kimya Palme' },
-    { id: 'BIYO_345', name: 'Biyoloji 3-4-5' },
-    { id: 'BIYO_BIYOTIK', name: 'Biyoloji Biyotik' },
-    { id: 'SOSYAL_345', name: 'Sosyal 3-4-5' },
-    { id: 'COG_BS', name: 'Coğrafya Başarı Serisi' },
-    { id: 'FEL_LIMIT_EL', name: 'Felsefe Limit Elin' },
-    { id: 'DIN_LIMIT_EL', name: 'Din Limit Elin' },
-    { id: 'TARIH_345', name: 'Tarih 3-4-5' }
+    { d: 15, c: "MATEMATİK", n: "EBOB-EKOK", t: 50, s: false, pdf: 'MAT_345' },
+    { d: 16, c: "KİMYA", n: "Periyodik Sistem", t: 40, s: true, pdf: 'KIMYA_PALME' },
+    { d: 17, c: "BİYOLOJİ", n: "Hücre", t: 50, s: true, pdf: 'BIYO_BIYOTIK' },
+    { d: 18, c: "TÜRKÇE", n: "Ses Bilgisi", t: 40, s: false, pdf: 'TURKCE_345' },
+    { d: 19, c: "MATEMATİK", n: "Rasyonel Sayılar", t: 40, s: true, pdf: 'MAT_BS' },
+    { d: 20, c: "GEOMETRİ", n: "Dik Üçgenler", t: 100, s: true, pdf: 'GEO_BS' },
+    { d: 21, c: "SİSTEM", n: "HAFTALIK ANALİZ", t: 0, isRest: true },
+    // ... continuing to 105
+    { d: 105, c: "SİSTEM", n: "SINAV GÜNÜ - 20 HAZİRAN 2026", t: 0, isRest: true }
 ];
 
 export default function App() {
     const [state, setState] = useState(() => {
-        const saved = localStorage.getItem('cloud_citadel_v11');
+        const saved = localStorage.getItem('citadel_v11_final');
         return saved ? JSON.parse(saved) : {
-            driveSetup: false,
-            fileIdMap: {}, // { MAT_345: 'abc123...', TURKCE_345: 'def456...', ... }
             dayIdx: 0,
             phase: 0,
             videoId: null,
@@ -58,40 +65,18 @@ export default function App() {
     const [toast, setToast] = useState(null);
     const [tool, setTool] = useState('pen');
     const [pdfUrl, setPdfUrl] = useState(null);
-    const [currentFileId, setCurrentFileId] = useState('');
-    const [currentCategory, setCurrentCategory] = useState('');
 
     const canvasRef = useRef(null);
     const pdfContainerRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem('cloud_citadel_v11', JSON.stringify(state));
+        localStorage.setItem('citadel_v11_final', JSON.stringify(state));
     }, [state]);
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(null), 3000);
-    };
-
-    const handleFileIdInput = (category, fileId) => {
-        setState(prev => ({
-            ...prev,
-            fileIdMap: { ...prev.fileIdMap, [category]: fileId }
-        }));
-    };
-
-    const handleDriveSetup = () => {
-        const required = ['MAT_345', 'TURKCE_345', 'PARAGRAF_LIMIT', 'GEO_3D_VDD', 'FIZIK_345', 'KIMYA_345', 'BIYO_345'];
-        const missing = required.filter(cat => !state.fileIdMap[cat]);
-
-        if (missing.length > 0) {
-            showToast(`⚠️ Eksik: ${missing.join(', ')}`);
-            return;
-        }
-
-        setState({ ...state, driveSetup: true });
-        showToast("🔒 Drive bağlandı!");
     };
 
     const extractVideoID = (url) => {
@@ -112,10 +97,10 @@ export default function App() {
 
     const openPDF = () => {
         const current = CURRICULUM_105[state.dayIdx];
-        const fileId = state.fileIdMap[current.pdf];
+        const fileId = DEFAULT_FILE_IDS[current.pdf];
 
         if (!fileId) {
-            showToast("⚠️ Bu PDF için File ID girilmemiş!");
+            showToast("⚠️ PDF bulunamadı!");
             return;
         }
 
@@ -205,44 +190,6 @@ export default function App() {
     const current = CURRICULUM_105[state.dayIdx];
     const progress = Math.round((state.dayIdx / 105) * 100);
 
-    // GOOGLE DRIVE SETUP SCREEN
-    if (!state.driveSetup) {
-        return (
-            <div style={s.base}>
-                <div style={s.setupBox}>
-                    <h1 style={s.setupTitle}>☁️ GOOGLE DRIVE BAĞLANTI</h1>
-                    <p style={s.setupDesc}>
-                        Drive Klasörü: <a href="https://drive.google.com/drive/folders/1A05kx1ewqSajhDP9pnI4LDSgZmFsjC2V" target="_blank" style={s.link}>Klasörü Aç</a><br />
-                        Her PDF için File ID'yi gir. (Sağ tık → Paylaş → Link kopyala → ID'yi çıkar)
-                    </p>
-
-                    <div style={s.grid}>
-                        {PDF_CATEGORIES.map(cat => (
-                            <div key={cat.id} style={s.mapBox}>
-                                <div style={s.catName}>{cat.name}</div>
-                                <input
-                                    type="text"
-                                    placeholder="File ID (örn: 1A05kx1e...)"
-                                    value={state.fileIdMap[cat.id] || ''}
-                                    onChange={(e) => handleFileIdInput(cat.id, e.target.value)}
-                                    style={{
-                                        ...s.input,
-                                        borderColor: state.fileIdMap[cat.id] ? '#00ff88' : '#333'
-                                    }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-
-                    <button onClick={handleDriveSetup} style={s.startBtn}>
-                        🚀 BAĞLANTIYI TAMAMLA
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // MAIN STUDY SCREEN
     return (
         <div style={s.base}>
             {toast && <div style={s.toast}>{toast}</div>}
@@ -250,7 +197,7 @@ export default function App() {
             <div style={s.header}>
                 <span style={s.dayCounter}>GÜN {current.d} / 105</span>
                 <span style={s.progressLabel}>{progress}%</span>
-                <span style={s.cloud}>☁️ Drive</span>
+                <span style={s.cloud}>☁️ Drive Ready</span>
             </div>
 
             <div style={s.main}>
@@ -375,21 +322,11 @@ export default function App() {
 const s = {
     base: { minHeight: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column' },
 
-    setupBox: { width: '100%', maxWidth: '900px', margin: 'auto', padding: '40px 30px', textAlign: 'center', overflowY: 'auto', maxHeight: '100vh' },
-    setupTitle: { fontSize: '24px', letterSpacing: '3px', marginBottom: '15px', color: '#00ff88' },
-    setupDesc: { fontSize: '13px', color: '#666', marginBottom: '30px', lineHeight: '1.8' },
-    link: { color: '#00ff88', textDecoration: 'underline' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px', marginBottom: '40px' },
-    mapBox: { padding: '15px', border: '1px solid #222', borderRadius: '8px', textAlign: 'left' },
-    catName: { fontSize: '11px', color: '#888', marginBottom: '8px', fontWeight: 'bold' },
-    input: { width: '100%', padding: '12px', background: '#0a0a0a', border: '2px solid #333', color: '#fff', borderRadius: '6px', fontSize: '13px', outline: 'none' },
-    startBtn: { width: '100%', maxWidth: '400px', padding: '20px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '10px', cursor: 'pointer' },
-
     toast: { position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#00ff88', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', zIndex: 1000 },
     header: { padding: '25px 30px', borderBottom: '1px solid #111', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666' },
     dayCounter: { fontWeight: 'bold', color: '#00ff88' },
     progressLabel: {},
-    cloud: { color: '#555' },
+    cloud: { color: '#00ff88' },
 
     main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px' },
     subjectBox: { textAlign: 'center', marginBottom: '30px' },
