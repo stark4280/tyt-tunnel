@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // --- DEFAULT GOOGLE DRIVE FILE IDS ---
 const DEFAULT_FILE_IDS = {
@@ -51,21 +51,36 @@ const CURRICULUM_105 = [
 
 export default function App() {
     const [state, setState] = useState(() => {
-        const saved = localStorage.getItem('citadel_v12');
+        const saved = localStorage.getItem('citadel_v13_pdfjs');
         return saved ? JSON.parse(saved) : {
             dayIdx: 0,
             phase: 0,
             videoId: null,
-            history: []
+            history: [],
+            currentPage: 1
         };
     });
 
     const [url, setUrl] = useState('');
     const [toast, setToast] = useState(null);
+    const [pdfDoc, setPdfDoc] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [numPages, setNumPages] = useState(0);
+
+    const canvasRef = useRef(null);
+    const containerRef = useRef(null);
 
     useEffect(() => {
-        localStorage.setItem('citadel_v12', JSON.stringify(state));
+        localStorage.setItem('citadel_v13_pdfjs', JSON.stringify(state));
     }, [state]);
+
+    // Initialize PDF.js worker
+    useEffect(() => {
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    }, []);
 
     const showToast = (msg) => {
         setToast(msg);
@@ -88,7 +103,7 @@ export default function App() {
         showToast("🔒 Video kilitlendi");
     };
 
-    const openPDF = () => {
+    const openPDF = async () => {
         const current = CURRICULUM_105[state.dayIdx];
         const fileId = DEFAULT_FILE_IDS[current.pdf];
 
@@ -97,12 +112,84 @@ export default function App() {
             return;
         }
 
-        // Google Drive'da PDF'i yeni sekmede aç
-        window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
-        showToast("📖 PDF yeni sekmede açıldı");
+        setLoading(true);
+        showToast("📥 PDF yükleniyor...");
+
+        try {
+            const downloadUrl = `https://docs.google.com/uc?id=${fileId}&export=download`;
+            const response = await fetch(downloadUrl);
+
+            if (!response.ok) throw new Error('Download failed');
+
+            const arrayBuffer = await response.arrayBuffer();
+
+            // Load PDF with PDF.js
+            const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+
+            setPdfDoc(pdf);
+            setNumPages(pdf.numPages);
+            setState({ ...state, currentPage: 1 });
+
+            showToast(`✅ PDF yüklendi (${pdf.numPages} sayfa)`);
+
+            // Render first page
+            renderPage(pdf, 1);
+        } catch (error) {
+            showToast("❌ PDF yüklenemedi!");
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const renderPage = async (pdf, pageNum) => {
+        const page = await pdf.getPage(pageNum);
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        // High-DPI for tablets (2.0 scale)
+        const viewport = page.getViewport({ scale: 2.0 });
+
+        // Set canvas dimensions
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // Fit to container width
+        if (containerRef.current) {
+            const containerWidth = containerRef.current.offsetWidth;
+            canvas.style.width = `${containerWidth}px`;
+            canvas.style.height = `${(viewport.height / viewport.width) * containerWidth}px`;
+        }
+
+        // Render PDF page
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+        };
+
+        await page.render(renderContext).promise;
+    };
+
+    const nextPage = () => {
+        if (state.currentPage < numPages) {
+            const newPage = state.currentPage + 1;
+            setState({ ...state, currentPage: newPage });
+            renderPage(pdfDoc, newPage);
+        }
+    };
+
+    const prevPage = () => {
+        if (state.currentPage > 1) {
+            const newPage = state.currentPage - 1;
+            setState({ ...state, currentPage: newPage });
+            renderPage(pdfDoc, newPage);
+        }
     };
 
     const handleDayComplete = () => {
+        setPdfDoc(null);
+
         const record = {
             day: CURRICULUM_105[state.dayIdx].d,
             topic: CURRICULUM_105[state.dayIdx].n,
@@ -115,6 +202,7 @@ export default function App() {
                 dayIdx: state.dayIdx + 1,
                 phase: 0,
                 videoId: null,
+                currentPage: 1,
                 history: [...state.history, record]
             });
             showToast("✅ Gün tamamlandı!");
@@ -183,9 +271,29 @@ export default function App() {
                                         />
                                     </div>
 
-                                    <button style={s.pdfBtn} onClick={openPDF}>
-                                        📖 PDF'İ AÇ (Yeni Sekme)
-                                    </button>
+                                    {!pdfDoc ? (
+                                        <button style={s.pdfBtn} onClick={openPDF} disabled={loading}>
+                                            {loading ? "⏳ Yükleniyor..." : "📖 PDF'İ AÇ (PDF.js HD)"}
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <div style={s.pdfViewerBox} ref={containerRef}>
+                                                <canvas ref={canvasRef} style={s.canvas} />
+                                            </div>
+
+                                            <div style={s.pdfControls}>
+                                                <button style={s.navBtn} onClick={prevPage} disabled={state.currentPage === 1}>
+                                                    ◀ Önceki
+                                                </button>
+                                                <span style={s.pageInfo}>
+                                                    Sayfa {state.currentPage} / {numPages}
+                                                </span>
+                                                <button style={s.navBtn} onClick={nextPage} disabled={state.currentPage === numPages}>
+                                                    İleri ▶
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
 
                                     <button style={s.doneBtn} onClick={() => setState({ ...state, phase: 2 })}>
                                         ✅ ÇALIŞMAYI BİTİRDİM
@@ -232,7 +340,7 @@ const s = {
     dayCounter: { fontWeight: 'bold', color: '#00ff88' },
     progressLabel: {},
 
-    main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', maxWidth: '900px', margin: '0 auto', width: '100%' },
+    main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', maxWidth: '1000px', margin: '0 auto', width: '100%' },
     subjectBox: { textAlign: 'center', marginBottom: '30px' },
     badgeCrit: { display: 'inline-block', background: '#ffaa00', color: '#000', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', marginBottom: '12px' },
     badgeNorm: { display: 'inline-block', background: '#1a1a1a', color: '#666', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', marginBottom: '12px' },
@@ -249,6 +357,14 @@ const s = {
     iframe: { width: '100%', height: '100%', border: 'none' },
 
     pdfBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
+
+    pdfViewerBox: { width: '100%', borderRadius: '10px', overflow: 'auto', marginBottom: '15px', border: '2px solid #222', background: '#1a1a1a', maxHeight: '70vh' },
+    canvas: { display: 'block', margin: '0 auto' },
+
+    pdfControls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: '#1a1a1a', borderRadius: '10px', marginBottom: '15px' },
+    navBtn: { padding: '10px 20px', background: '#0a0a0a', border: '1px solid #333', color: '#00ff88', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' },
+    pageInfo: { fontSize: '14px', color: '#888' },
+
     doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #ffaa00, #ff8800)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     finishBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     restBtn: { padding: '18px', background: '#1a1a1a', border: '1px solid #333', color: '#00ff88', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
