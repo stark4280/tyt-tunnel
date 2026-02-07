@@ -91,114 +91,478 @@ const FULL_DB = [
 ];
 
 export default function App() {
-    const [p, setP] = useState(() => {
-        const saved = localStorage.getItem('tyt_final_v1');
-        return saved ? JSON.parse(saved) : { sIdx: 0, stepIdx: 0, showVideo: false };
+    const [progress, setProgress] = useState(() => {
+        const saved = localStorage.getItem('tyt_study_v3');
+        return saved ? JSON.parse(saved) : { subjectIndex: 0, stepIndex: 0, showVideo: false };
     });
 
-    const [inputVal, setInputVal] = useState("");
+    const [questionCount, setQuestionCount] = useState("");
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        localStorage.setItem('tyt_final_v1', JSON.stringify(p));
-    }, [p]);
+        localStorage.setItem('tyt_study_v3', JSON.stringify(progress));
+    }, [progress]);
 
-    const current = FULL_DB[p.sIdx];
+    const current = FULL_DB[progress.subjectIndex];
     const examDate = new Date("2026-06-20");
     const daysLeft = Math.ceil((examDate - new Date()) / (1000 * 60 * 60 * 24));
+    const completionPercentage = Math.round((progress.subjectIndex / FULL_DB.length) * 100);
 
-    const handleNext = () => {
-        if (p.stepIdx === 0) setP({ ...p, stepIdx: 1, showVideo: true });
-        else if (p.stepIdx === 1) {
-            if (!inputVal || inputVal < 10) return alert("En az 10 soru girişi yapmalısın!");
-            setP({ ...p, stepIdx: 2, showVideo: false });
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    const handleOpenVideo = () => {
+        setProgress({ ...progress, stepIndex: 1, showVideo: true });
+    };
+
+    const handleCloseVideo = () => {
+        setProgress({ ...progress, showVideo: false });
+    };
+
+    const handleSaveProgress = () => {
+        const count = Number(questionCount);
+        if (!questionCount || count < 10) {
+            showToast("❌ En az 10 soru çözmelisin!", 'error');
+            return;
         }
-        else {
-            if (p.sIdx < FULL_DB.length - 1) {
-                setP({ ...p, sIdx: p.sIdx + 1, stepIdx: 0 });
-                setInputVal("");
-            } else {
-                alert("TEBRİKLER! TÜM MÜFREDATI BİTİRDİN.");
-            }
+
+        showToast(`✅ ${count} soru kaydedildi! Tebrikler!`, 'success');
+        setTimeout(() => {
+            setProgress({ ...progress, stepIndex: 2, showVideo: false });
+            setQuestionCount("");
+        }, 1000);
+    };
+
+    const handleNextSubject = () => {
+        if (progress.subjectIndex < FULL_DB.length - 1) {
+            setProgress({ subjectIndex: progress.subjectIndex + 1, stepIndex: 0, showVideo: false });
+            setQuestionCount("");
+            showToast("📚 Yeni konuya geçildi!", 'info');
+        } else {
+            showToast("🎉 TEBRİKLER! TÜM MÜFREDATI BİTİRDİN!", 'success');
+        }
+    };
+
+    const handlePreviousSubject = () => {
+        if (progress.subjectIndex > 0) {
+            setProgress({ subjectIndex: progress.subjectIndex - 1, stepIndex: 0, showVideo: false });
+            setQuestionCount("");
+            showToast("⬅️ Önceki konuya dönüldü", 'info');
+        }
+    };
+
+    const jumpToStep = (stepIdx) => {
+        if (stepIdx <= progress.stepIndex) {
+            setProgress({ ...progress, stepIndex: stepIdx });
         }
     };
 
     return (
-        <div style={style.body}>
-            {/* Üst Bilgi Paneli */}
-            <div style={style.statusBar}>
-                <span>TYT 2026: {daysLeft} GÜN</span>
-                <span>MOD: {current.c}</span>
-                <span>{p.sIdx + 1}/{FULL_DB.length}</span>
+        <div style={styles.body}>
+            {/* Toast Notification */}
+            {toast && (
+                <div style={{
+                    ...styles.toast,
+                    backgroundColor: toast.type === 'error' ? '#ff4444' : toast.type === 'info' ? '#4488ff' : '#00ff88',
+                }}>
+                    {toast.message}
+                </div>
+            )}
+
+            {/* Status Bar */}
+            <div style={styles.statusBar}>
+                <span style={styles.statusItem}>📅 {daysLeft} GÜN</span>
+                <span style={styles.statusItem}>{current.c}</span>
+                <span style={styles.statusItem}>{progress.subjectIndex + 1}/{FULL_DB.length}</span>
             </div>
 
-            {/* Video Penceresi (In-App) */}
-            {p.showVideo && (
-                <div style={style.videoOverlay}>
-                    <div style={style.videoHeader}>
-                        <span>Oynatılıyor: {current.n}</span>
-                        <button onClick={() => setP({ ...p, showVideo: false })} style={style.closeBtn}>✕ KAPAT</button>
+            {/* Video Overlay */}
+            {progress.showVideo && (
+                <div style={styles.videoOverlay}>
+                    <div style={styles.videoHeader}>
+                        <span style={styles.videoTitle}>▶ {current.n}</span>
+                        <button onClick={handleCloseVideo} style={styles.closeBtn}>✕ KAPAT</button>
                     </div>
                     <iframe
-                        style={style.iframe}
+                        style={styles.iframe}
                         src={`https://www.youtube.com/embed?listType=search&list=${current.yt}`}
                         allowFullScreen
+                        title={current.n}
                     />
                 </div>
             )}
 
-            {/* Ana Ekran */}
-            <div style={style.content}>
-                <div style={style.progress}>{Math.round((p.sIdx / FULL_DB.length) * 100)}% TAMAMLANDI</div>
-                <div style={style.subjectCard}>
-                    <span style={style.tag}>{current.s ? "★ YÜKSEK PUAN" : "TEMEL KONU"}</span>
-                    <h1 style={style.title}>{current.n}</h1>
-                    <p style={style.subtitle}>Sınavdaki tahmini ağırlığı: ~{current.q} Soru</p>
+            {/* Main Content */}
+            <div style={styles.content}>
+                <div style={styles.progressBar}>
+                    <div style={{ ...styles.progressFill, width: `${completionPercentage}%` }} />
+                </div>
+                <div style={styles.progressText}>{completionPercentage}% TAMAMLANDI</div>
+
+                <div style={styles.subjectCard}>
+                    <span style={current.s ? styles.tagCritical : styles.tagNormal}>
+                        {current.s ? "★ YÜKSEK PUAN" : "○ TEMEL KONU"}
+                    </span>
+                    <h1 style={styles.title}>{current.n}</h1>
+                    <p style={styles.subtitle}>Sınavda ~{current.q} Soru | Hedef: {current.target} Soru</p>
                 </div>
 
-                <div style={style.stepNav}>
-                    <div style={{ ...style.step, color: p.stepIdx >= 0 ? '#00FF00' : '#444' }}>İZLE</div>
-                    <div style={{ ...style.step, color: p.stepIdx >= 1 ? '#00FF00' : '#444' }}>ÇÖZ</div>
-                    <div style={{ ...style.step, color: p.stepIdx >= 2 ? '#00FF00' : '#444' }}>BİTİR</div>
+                <div style={styles.stepNav}>
+                    <div
+                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 0 ? styles.stepActive : {}) }}
+                        onClick={() => jumpToStep(0)}
+                    >
+                        <span style={styles.stepNumber}>1</span>
+                        <span style={styles.stepLabel}>İZLE</span>
+                    </div>
+                    <div style={styles.stepLine} />
+                    <div
+                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 1 ? styles.stepActive : {}) }}
+                        onClick={() => jumpToStep(1)}
+                    >
+                        <span style={styles.stepNumber}>2</span>
+                        <span style={styles.stepLabel}>ÇÖZ</span>
+                    </div>
+                    <div style={styles.stepLine} />
+                    <div
+                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 2 ? styles.stepActive : {}) }}
+                        onClick={() => jumpToStep(2)}
+                    >
+                        <span style={styles.stepNumber}>3</span>
+                        <span style={styles.stepLabel}>BİTİR</span>
+                    </div>
                 </div>
 
-                <div style={style.actionSection}>
-                    {p.stepIdx === 0 && <button onClick={handleNext} style={style.mainBtn}>KONU VİDEOSUNU AÇ</button>}
-                    {p.stepIdx === 1 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <p style={{ fontSize: '14px', color: '#888' }}>Hedef: {current.target} Soru</p>
+                <div style={styles.actionSection}>
+                    {progress.stepIndex === 0 && (
+                        <button onClick={handleOpenVideo} style={styles.mainBtn} className="btn-primary">
+                            🎬 KONU VİDEOSUNU İZLE
+                        </button>
+                    )}
+
+                    {progress.stepIndex === 1 && (
+                        <div style={styles.inputSection}>
+                            <p style={styles.targetText}>🎯 Hedef: {current.target} Soru</p>
                             <input
                                 type="number"
                                 placeholder="Kaç soru çözdün?"
-                                value={inputVal}
-                                onChange={(e) => setInputVal(e.target.value)}
-                                style={style.input}
+                                value={questionCount}
+                                onChange={(e) => setQuestionCount(e.target.value)}
+                                style={styles.input}
                             />
-                            <button onClick={handleNext} style={style.mainBtn}>VERİYİ KAYDET</button>
+                            <button onClick={handleSaveProgress} style={styles.mainBtn} className="btn-primary">
+                                💾 VERİYİ KAYDET
+                            </button>
                         </div>
                     )}
-                    {p.stepIdx === 2 && <button onClick={handleNext} style={style.finishBtn}>SIRADAKİ KONUYA ATLA</button>}
+
+                    {progress.stepIndex === 2 && (
+                        <button onClick={handleNextSubject} style={styles.finishBtn} className="btn-success">
+                            ✅ SONRAKİ KONUYA GEÇ
+                        </button>
+                    )}
+
+                    {/* Navigation Buttons */}
+                    <div style={styles.navButtons}>
+                        <button
+                            onClick={handlePreviousSubject}
+                            disabled={progress.subjectIndex === 0}
+                            style={{ ...styles.navBtn, ...(progress.subjectIndex === 0 ? styles.navBtnDisabled : {}) }}
+                        >
+                            ← ÖNCEKİ
+                        </button>
+                        <button
+                            onClick={handleNextSubject}
+                            disabled={progress.subjectIndex >= FULL_DB.length - 1}
+                            style={{ ...styles.navBtn, ...(progress.subjectIndex >= FULL_DB.length - 1 ? styles.navBtnDisabled : {}) }}
+                        >
+                            ATLA →
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .btn-primary:hover {
+          transform: scale(1.05);
+          box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+        .btn-primary:active {
+          transform: scale(0.98);
+        }
+        .btn-success:hover {
+          transform: scale(1.05);
+          box-shadow: 0 0 20px rgba(0,255,136,0.5);
+        }
+        .btn-success:active {
+          transform: scale(0.98);
+        }
+      `}</style>
         </div>
     );
 }
 
-const style = {
-    body: { height: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    statusBar: { padding: '50px 20px 15px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666', borderBottom: '1px solid #111' },
-    videoOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#000', zIndex: 1000, display: 'flex', flexDirection: 'column' },
-    videoHeader: { padding: '50px 20px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' },
-    closeBtn: { background: '#222', border: 'none', color: '#fff', padding: '8px 15px', borderRadius: '5px' },
-    iframe: { flex: 1, border: 'none' },
-    content: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' },
-    progress: { fontSize: '10px', color: '#00FF00', marginBottom: '20px', letterSpacing: '2px' },
-    subjectCard: { textAlign: 'center', marginBottom: '40px' },
-    tag: { fontSize: '10px', backgroundColor: '#111', padding: '5px 10px', borderRadius: '4px', color: '#00FF00' },
-    title: { fontSize: '28px', fontWeight: 'bold', margin: '15px 0' },
-    subtitle: { fontSize: '13px', color: '#555' },
-    stepNav: { display: 'flex', gap: '30px', marginBottom: '40px', fontWeight: 'bold', fontSize: '12px' },
-    actionSection: { width: '100%', maxWidth: '300px' },
-    mainBtn: { width: '100%', padding: '20px', backgroundColor: '#fff', color: '#000', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '16px' },
-    finishBtn: { width: '100%', padding: '20px', backgroundColor: '#00FF00', color: '#000', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '16px' },
-    input: { width: '100%', padding: '15px', backgroundColor: '#111', border: '1px solid #222', color: '#fff', borderRadius: '10px', textAlign: 'center', fontSize: '18px' }
+const styles = {
+    body: {
+        height: '100vh',
+        backgroundColor: '#000',
+        color: '#fff',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    statusBar: {
+        padding: '50px 20px 15px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: '11px',
+        color: '#666',
+        borderBottom: '1px solid #111',
+        background: 'linear-gradient(180deg, #0a0a0a 0%, #000 100%)',
+    },
+    statusItem: {
+        animation: 'fadeIn 0.5s ease',
+    },
+    toast: {
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '15px 30px',
+        borderRadius: '10px',
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        zIndex: 2000,
+        animation: 'fadeIn 0.3s ease',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+    },
+    videoOverlay: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#000',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        animation: 'fadeIn 0.3s ease',
+    },
+    videoHeader: {
+        padding: '50px 20px 20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '14px',
+        borderBottom: '1px solid #222',
+    },
+    videoTitle: {
+        flex: 1,
+        fontWeight: 'bold',
+    },
+    closeBtn: {
+        background: 'linear-gradient(135deg, #333 0%, #222 100%)',
+        border: '1px solid #444',
+        color: '#fff',
+        padding: '10px 20px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        transition: 'all 0.2s ease',
+    },
+    iframe: {
+        flex: 1,
+        border: 'none',
+    },
+    content: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        animation: 'slideIn 0.5s ease',
+    },
+    progressBar: {
+        width: '100%',
+        maxWidth: '400px',
+        height: '4px',
+        backgroundColor: '#111',
+        borderRadius: '2px',
+        overflow: 'hidden',
+        marginBottom: '10px',
+    },
+    progressFill: {
+        height: '100%',
+        background: 'linear-gradient(90deg, #00ff88 0%, #00cc66 100%)',
+        transition: 'width 0.5s ease',
+    },
+    progressText: {
+        fontSize: '10px',
+        color: '#00ff88',
+        marginBottom: '30px',
+        letterSpacing: '2px',
+    },
+    subjectCard: {
+        textAlign: 'center',
+        marginBottom: '40px',
+    },
+    tagCritical: {
+        fontSize: '10px',
+        background: 'linear-gradient(135deg, #ffaa00 0%, #ff8800 100%)',
+        padding: '6px 12px',
+        borderRadius: '6px',
+        color: '#000',
+        fontWeight: 'bold',
+        display: 'inline-block',
+    },
+    tagNormal: {
+        fontSize: '10px',
+        backgroundColor: '#1a1a1a',
+        padding: '6px 12px',
+        borderRadius: '6px',
+        color: '#888',
+        display: 'inline-block',
+    },
+    title: {
+        fontSize: '26px',
+        fontWeight: 'bold',
+        margin: '15px 0',
+        background: 'linear-gradient(135deg, #fff 0%, #aaa 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+    },
+    subtitle: {
+        fontSize: '13px',
+        color: '#666',
+    },
+    stepNav: {
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '40px',
+        gap: '0',
+    },
+    stepDot: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '5px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+    },
+    stepActive: {
+        transform: 'scale(1.1)',
+    },
+    stepNumber: {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        backgroundColor: '#111',
+        border: '2px solid #00ff88',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: '#00ff88',
+    },
+    stepLabel: {
+        fontSize: '11px',
+        color: '#00ff88',
+        fontWeight: 'bold',
+    },
+    stepLine: {
+        width: '40px',
+        height: '2px',
+        backgroundColor: '#222',
+        margin: '0 5px',
+        marginBottom: '20px',
+    },
+    actionSection: {
+        width: '100%',
+        maxWidth: '350px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+    },
+    mainBtn: {
+        width: '100%',
+        padding: '18px',
+        background: 'linear-gradient(135deg, #fff 0%, #e0e0e0 100%)',
+        color: '#000',
+        border: 'none',
+        borderRadius: '12px',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
+    finishBtn: {
+        width: '100%',
+        padding: '18px',
+        background: 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)',
+        color: '#000',
+        border: 'none',
+        borderRadius: '12px',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
+    inputSection: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+    },
+    targetText: {
+        fontSize: '14px',
+        color: '#888',
+        textAlign: 'center',
+        margin: 0,
+    },
+    input: {
+        width: '100%',
+        padding: '15px',
+        backgroundColor: '#0a0a0a',
+        border: '2px solid #222',
+        color: '#fff',
+        borderRadius: '10px',
+        textAlign: 'center',
+        fontSize: '18px',
+        fontWeight: 'bold',
+        outline: 'none',
+        transition: 'all 0.2s ease',
+    },
+    navButtons: {
+        display: 'flex',
+        gap: '10px',
+    },
+    navBtn: {
+        flex: 1,
+        padding: '12px',
+        backgroundColor: '#1a1a1a',
+        color: '#888',
+        border: '1px solid #333',
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
+    navBtnDisabled: {
+        opacity: 0.3,
+        cursor: 'not-allowed',
+    },
 };
