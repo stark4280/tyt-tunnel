@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // --- DEFAULT GOOGLE DRIVE FILE IDS ---
 const DEFAULT_FILE_IDS = {
@@ -23,7 +23,7 @@ const DEFAULT_FILE_IDS = {
     TURKCE_HIZ: '161bXwF7ZE_sJyCft0DamMzTZGlNM7oCj'
 };
 
-// --- COMPLETE 105-DAY INTERLEAVED CURRICULUM ---
+// --- 105-DAY INTERLEAVED CURRICULUM ---
 const CURRICULUM_105 = [
     { d: 1, c: "TÜRKÇE", n: "Sözcükte Anlam", t: 60, s: false, pdf: 'TURKCE_345' },
     { d: 2, c: "MATEMATİK", n: "Temel Kavramlar", t: 100, s: true, pdf: 'MAT_345' },
@@ -46,13 +46,12 @@ const CURRICULUM_105 = [
     { d: 19, c: "MATEMATİK", n: "Rasyonel Sayılar", t: 40, s: true, pdf: 'MAT_BS' },
     { d: 20, c: "GEOMETRİ", n: "Dik Üçgenler", t: 100, s: true, pdf: 'GEO_BS' },
     { d: 21, c: "SİSTEM", n: "HAFTALIK ANALİZ", t: 0, isRest: true },
-    // ... continuing to 105
     { d: 105, c: "SİSTEM", n: "SINAV GÜNÜ - 20 HAZİRAN 2026", t: 0, isRest: true }
 ];
 
 export default function App() {
     const [state, setState] = useState(() => {
-        const saved = localStorage.getItem('citadel_v11_final');
+        const saved = localStorage.getItem('citadel_v12');
         return saved ? JSON.parse(saved) : {
             dayIdx: 0,
             phase: 0,
@@ -63,17 +62,9 @@ export default function App() {
 
     const [url, setUrl] = useState('');
     const [toast, setToast] = useState(null);
-    const [tool, setTool] = useState('pen');
-    const [penMode, setPenMode] = useState(false);
-    const [pdfUrl, setPdfUrl] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    const canvasRef = useRef(null);
-    const pdfContainerRef = useRef(null);
-    const [isDrawing, setIsDrawing] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem('citadel_v11_final', JSON.stringify(state));
+        localStorage.setItem('citadel_v12', JSON.stringify(state));
     }, [state]);
 
     const showToast = (msg) => {
@@ -97,7 +88,7 @@ export default function App() {
         showToast("🔒 Video kilitlendi");
     };
 
-    const openPDF = async () => {
+    const openPDF = () => {
         const current = CURRICULUM_105[state.dayIdx];
         const fileId = DEFAULT_FILE_IDS[current.pdf];
 
@@ -106,44 +97,12 @@ export default function App() {
             return;
         }
 
-        setLoading(true);
-        showToast("📥 PDF indiriliyor...");
-
-        try {
-            // Google Drive direkt download URL (boyut sınırı yok)
-            const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-
-            const response = await fetch(downloadUrl);
-            if (!response.ok) throw new Error('Download failed');
-
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-
-            setPdfUrl(blobUrl);
-
-            setTimeout(() => {
-                if (canvasRef.current && pdfContainerRef.current) {
-                    const canvas = canvasRef.current;
-                    const container = pdfContainerRef.current;
-                    canvas.width = container.offsetWidth;
-                    canvas.height = container.offsetHeight;
-                }
-            }, 500);
-
-            showToast("✅ PDF yüklendi");
-        } catch (error) {
-            showToast("❌ PDF yüklenemedi!");
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
+        // Google Drive'da PDF'i yeni sekmede aç
+        window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
+        showToast("📖 PDF yeni sekmede açıldı");
     };
 
     const handleDayComplete = () => {
-        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        setPdfUrl(null);
-        setPenMode(false);
-
         const record = {
             day: CURRICULUM_105[state.dayIdx].d,
             topic: CURRICULUM_105[state.dayIdx].n,
@@ -165,51 +124,6 @@ export default function App() {
         }
     };
 
-    // Canvas functions
-    const startDrawing = (e) => {
-        if (!penMode) return;
-        setIsDrawing(true);
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.getBoundingClientRect();
-        const pos = getPosition(e, rect);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-    };
-
-    const draw = (e) => {
-        if (!isDrawing || !penMode) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.getBoundingClientRect();
-        const pos = getPosition(e, rect);
-
-        if (tool === 'pen') {
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-        } else if (tool === 'eraser') {
-            ctx.clearRect(pos.x - 10, pos.y - 10, 20, 20);
-        }
-    };
-
-    const stopDrawing = () => setIsDrawing(false);
-
-    const clearCanvas = () => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        showToast("🧹 Temizlendi");
-    };
-
-    const getPosition = (e, rect) => {
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    };
-
     const current = CURRICULUM_105[state.dayIdx];
     const progress = Math.round((state.dayIdx / 105) * 100);
 
@@ -220,7 +134,6 @@ export default function App() {
             <div style={s.header}>
                 <span style={s.dayCounter}>GÜN {current.d} / 105</span>
                 <span style={s.progressLabel}>{progress}%</span>
-                <span style={s.cloud}>☁️ Drive Ready</span>
             </div>
 
             <div style={s.main}>
@@ -257,76 +170,26 @@ export default function App() {
                                 </>
                             )}
 
-                            {/* PHASE 1: PDF + CANVAS */}
+                            {/* PHASE 1: VIDEO PLAYER + PDF */}
                             {state.phase === 1 && (
                                 <>
-                                    {!pdfUrl ? (
-                                        <button style={s.pdfBtn} onClick={openPDF} disabled={loading}>
-                                            {loading ? "⏳ İndiriliyor..." : "📖 PDF'İ AÇ (Drive Download)"}
-                                        </button>
-                                    ) : (
-                                        <>
-                                            {/* FLOATING TOOLBAR */}
-                                            <div style={s.floatingToolbar}>
-                                                <button
-                                                    style={{ ...s.floatBtn, ...(penMode ? s.floatBtnActive : {}) }}
-                                                    onClick={() => {
-                                                        setPenMode(!penMode);
-                                                        showToast(penMode ? "🖱️ Kalem kapatıldı" : "✏️ Kalem açıldı");
-                                                    }}
-                                                >
-                                                    {penMode ? "🖱️ KALEMI BIRAK" : "✏️ KALEM AL"}
-                                                </button>
+                                    <div style={s.videoContainer}>
+                                        <iframe
+                                            src={`https://www.youtube-nocookie.com/embed/${state.videoId}`}
+                                            style={s.iframe}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                            title="YouTube Video"
+                                        />
+                                    </div>
 
-                                                {penMode && (
-                                                    <>
-                                                        <button
-                                                            style={{ ...s.floatBtn, ...(tool === 'pen' ? s.floatBtnActive : {}) }}
-                                                            onClick={() => setTool('pen')}
-                                                        >
-                                                            ✏️
-                                                        </button>
-                                                        <button
-                                                            style={{ ...s.floatBtn, ...(tool === 'eraser' ? s.floatBtnActive : {}) }}
-                                                            onClick={() => setTool('eraser')}
-                                                        >
-                                                            🧹
-                                                        </button>
-                                                        <button style={s.floatBtn} onClick={clearCanvas}>
-                                                            🗑️
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
+                                    <button style={s.pdfBtn} onClick={openPDF}>
+                                        📖 PDF'İ AÇ (Yeni Sekme)
+                                    </button>
 
-                                            <div style={s.pdfContainer} ref={pdfContainerRef}>
-                                                <embed
-                                                    src={pdfUrl}
-                                                    type="application/pdf"
-                                                    style={s.pdfViewer}
-                                                />
-                                                <canvas
-                                                    ref={canvasRef}
-                                                    style={{
-                                                        ...s.canvasLayer,
-                                                        pointerEvents: penMode ? 'auto' : 'none',
-                                                        cursor: penMode ? 'crosshair' : 'default'
-                                                    }}
-                                                    onMouseDown={startDrawing}
-                                                    onMouseMove={draw}
-                                                    onMouseUp={stopDrawing}
-                                                    onMouseLeave={stopDrawing}
-                                                    onTouchStart={startDrawing}
-                                                    onTouchMove={draw}
-                                                    onTouchEnd={stopDrawing}
-                                                />
-                                            </div>
-
-                                            <button style={s.doneBtn} onClick={() => setState({ ...state, phase: 2 })}>
-                                                ✅ ÇALIŞMAYI BİTİRDİM
-                                            </button>
-                                        </>
-                                    )}
+                                    <button style={s.doneBtn} onClick={() => setState({ ...state, phase: 2 })}>
+                                        ✅ ÇALIŞMAYI BİTİRDİM
+                                    </button>
                                 </>
                             )}
 
@@ -368,9 +231,8 @@ const s = {
     header: { padding: '25px 30px', borderBottom: '1px solid #111', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666' },
     dayCounter: { fontWeight: 'bold', color: '#00ff88' },
     progressLabel: {},
-    cloud: { color: '#00ff88' },
 
-    main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px' },
+    main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', maxWidth: '900px', margin: '0 auto', width: '100%' },
     subjectBox: { textAlign: 'center', marginBottom: '30px' },
     badgeCrit: { display: 'inline-block', background: '#ffaa00', color: '#000', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', marginBottom: '12px' },
     badgeNorm: { display: 'inline-block', background: '#1a1a1a', color: '#666', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', marginBottom: '12px' },
@@ -378,53 +240,16 @@ const s = {
     topicTitle: { fontSize: '28px', fontWeight: 'bold', margin: '10px 0' },
     target: { fontSize: '13px', color: '#888' },
 
-    actions: { width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '15px' },
+    actions: { width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' },
     searchBtn: { padding: '14px', background: '#1a1a1a', border: '1px solid #333', color: '#888', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' },
     inputField: { padding: '16px', background: '#0a0a0a', border: '2px solid #222', color: '#fff', borderRadius: '10px', fontSize: '15px', textAlign: 'center', outline: 'none' },
     lockBtn: { padding: '18px', background: 'linear-gradient(135deg, #fff, #e0e0e0)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
+
+    videoContainer: { width: '100%', aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '2px solid #222' },
+    iframe: { width: '100%', height: '100%', border: 'none' },
+
     pdfBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-
-    floatingToolbar: {
-        position: 'fixed',
-        bottom: '30px',
-        right: '30px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        zIndex: 999,
-        background: 'rgba(0, 0, 0, 0.8)',
-        padding: '15px',
-        borderRadius: '15px',
-        border: '1px solid #333',
-        backdropFilter: 'blur(10px)'
-    },
-    floatBtn: {
-        padding: '12px 16px',
-        background: '#1a1a1a',
-        border: '1px solid #333',
-        color: '#888',
-        borderRadius: '10px',
-        cursor: 'pointer',
-        fontSize: '13px',
-        fontWeight: 'bold',
-        transition: 'all 0.2s',
-        whiteSpace: 'nowrap'
-    },
-    floatBtnActive: { background: '#00ff88', color: '#000', borderColor: '#00ff88' },
-
-    pdfContainer: { position: 'relative', width: '100%', height: '600px', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '2px solid #222' },
-    pdfViewer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' },
-    canvasLayer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        touchAction: 'none',
-        zIndex: 10
-    },
-
-    doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
+    doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #ffaa00, #ff8800)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     finishBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     restBtn: { padding: '18px', background: '#1a1a1a', border: '1px solid #333', color: '#00ff88', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
 
