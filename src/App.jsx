@@ -92,60 +92,71 @@ const FULL_DB = [
 
 export default function App() {
     const [state, setState] = useState(() => {
-        const saved = localStorage.getItem('tunnel_v52');
-        return saved ? JSON.parse(saved) : { idx: 0, step: 0, data: { count: '', notes: '' }, history: [] };
+        const saved = localStorage.getItem('tunnel_v53');
+        return saved ? JSON.parse(saved) : { idx: 0, step: 0, videoId: null, count: '', notes: '', history: [] };
     });
 
+    const [urlInput, setUrlInput] = useState('');
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        localStorage.setItem('tunnel_v52', JSON.stringify(state));
+        localStorage.setItem('tunnel_v53', JSON.stringify(state));
     }, [state]);
 
     const current = FULL_DB[state.idx];
     const examDate = new Date("2026-06-20");
     const daysLeft = Math.ceil((examDate - new Date()) / (1000 * 60 * 60 * 24));
     const progress = Math.round((state.idx / FULL_DB.length) * 100);
-
     const totalSolved = state.history.reduce((sum, h) => sum + (Number(h.count) || 0), 0);
-    const totalTarget = FULL_DB.reduce((sum, t) => sum + t.target, 0);
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(null), 2500);
     };
 
-    const openVideo = () => {
-        const query = `TYT ${current.c} ${current.n} Konu Anlatimi`.replace(/ /g, '+');
-        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
-        showToast("Video sayfası açıldı. İzleyip dön.");
+    // YouTube URL Parser
+    const extractVideoID = (url) => {
+        const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
     };
 
-    const confirmWatched = () => {
-        setState({ ...state, step: 1 });
-        showToast("Adım 2: Soru çözmeye başla.");
-    };
-
-    const saveSolved = () => {
-        const count = Number(state.data.count);
-        if (!count || count < 10) {
-            showToast("En az 10 soru çözmelisin.");
+    const handleVideoLock = () => {
+        const id = extractVideoID(urlInput);
+        if (!id) {
+            showToast("❌ Geçersiz YouTube linki!");
             return;
         }
-        setState({ ...state, step: 2 });
-        showToast(`${count} soru kaydedildi. Adım 3'e geç.`);
+        setState({ ...state, videoId: id, step: 1 });
+        setUrlInput('');
+        showToast("🔒 Video kilitlendi. İzlemeye başla.");
     };
 
-    const saveNotes = () => {
-        if (!state.data.notes || state.data.notes.trim().length < 20) {
-            showToast("En az 20 karakter not almalısın.");
+    const handleWatchComplete = () => {
+        setState({ ...state, step: 2 });
+        showToast("✅ İzleme tamamlandı. Soru çözmeye geç.");
+    };
+
+    const handleSolveSave = () => {
+        const count = Number(state.count);
+        if (!count || count < 10) {
+            showToast("❌ En az 10 soru çözmelisin!");
+            return;
+        }
+        setState({ ...state, step: 3 });
+        showToast(`💾 ${count} soru kaydedildi. Notlarını yaz.`);
+    };
+
+    const handleComplete = () => {
+        if (!state.notes || state.notes.trim().length < 20) {
+            showToast("❌ En az 20 karakter not yazmalısın!");
             return;
         }
 
         const record = {
             topic: current.n,
-            count: Number(state.data.count),
-            notes: state.data.notes,
+            count: Number(state.count),
+            notes: state.notes,
             date: new Date().toISOString()
         };
 
@@ -153,95 +164,126 @@ export default function App() {
             setState({
                 idx: state.idx + 1,
                 step: 0,
-                data: { count: '', notes: '' },
+                videoId: null,
+                count: '',
+                notes: '',
                 history: [...state.history, record]
             });
-            showToast("Konu tamamlandı. Sıradaki konuya geçiliyor.");
+            showToast("🎯 Konu tamamlandı! Sıradaki konuya geçiliyor.");
         } else {
-            setState({
-                ...state,
-                history: [...state.history, record]
-            });
-            showToast("TEBRİKLER! TÜM MÜFREDATI BİTİRDİN!");
+            setState({ ...state, history: [...state.history, record] });
+            showToast("🎉 TEBRİKLER! TÜM MÜFREDATI BİTİRDİN!");
         }
     };
 
     return (
-        <div style={s.body}>
+        <div style={s.app}>
             {toast && <div style={s.toast}>{toast}</div>}
 
             {/* Header */}
             <div style={s.header}>
                 <div style={s.countdown}>⏱ {daysLeft} GÜN</div>
                 <div style={s.module}>{current.c}</div>
-                <div style={s.position}>{state.idx + 1}/{FULL_DB.length}</div>
+                <div style={s.counter}>{state.idx + 1}/{FULL_DB.length}</div>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress */}
             <div style={s.progressBar}>
                 <div style={{ ...s.progressFill, width: `${progress}%` }} />
             </div>
-            <div style={s.progressLabel}>{progress}% | {totalSolved}/{totalTarget} SORU</div>
+            <div style={s.progressLabel}>{progress}% TUNNEL | {totalSolved} SORU</div>
 
-            {/* Subject Info */}
+            {/* Subject */}
             <div style={s.subject}>
-                <div style={current.s ? s.tagCritical : s.tagNormal}>
+                <div style={current.s ? s.tagCrit : s.tagNorm}>
                     {current.s ? "★ YÜK. PUAN" : "○ TEMEL"}
                 </div>
                 <h1 style={s.title}>{current.n}</h1>
-                <p style={s.meta}>Sınavda ~{current.q} Soru | Hedef: {current.target} Soru</p>
+                <p style={s.meta}>Sınavda ~{current.q} Soru | Hedef: {current.target}</p>
             </div>
 
             {/* Steps */}
             <div style={s.steps}>
-                <div style={state.step >= 0 ? s.stepActive : s.stepInactive}>1. İZLE</div>
-                <div style={s.arrow}>→</div>
-                <div style={state.step >= 1 ? s.stepActive : s.stepInactive}>2. ÇÖZ</div>
-                <div style={s.arrow}>→</div>
-                <div style={state.step >= 2 ? s.stepActive : s.stepInactive}>3. ANALİZ</div>
+                <span style={state.step >= 0 ? s.stepOn : s.stepOff}>BUL</span>
+                <span style={s.arrow}>→</span>
+                <span style={state.step >= 1 ? s.stepOn : s.stepOff}>İZLE</span>
+                <span style={s.arrow}>→</span>
+                <span style={state.step >= 2 ? s.stepOn : s.stepOff}>ÇÖZ</span>
+                <span style={s.arrow}>→</span>
+                <span style={state.step >= 3 ? s.stepOn : s.stepOff}>NOTLA</span>
             </div>
 
-            {/* Actions */}
-            <div style={s.actions}>
+            {/* Content */}
+            <div style={s.content}>
+                {/* STEP 0: BUL & KİLİTLE */}
                 {state.step === 0 && (
                     <>
-                        <button onClick={openVideo} style={s.btn}>
-                            🎬 VİDEO ARAMASINI BAŞLAT
+                        <p style={s.hint}>⚠️ Algoritma tuzağına düşme. Videoyu bul, linkini yapıştır.</p>
+                        <button
+                            style={s.searchBtn}
+                            onClick={() => window.open(`https://www.youtube.com/results?search_query=TYT+${current.c}+${current.n}+konu+anlatimi`, '_blank')}
+                        >
+                            🔍 YOUTUBE'DA ARA
                         </button>
-                        <p style={s.hint}>En iyi anladığın hocayı seç, izle ve buraya dönüp onay ver.</p>
-                        <button onClick={confirmWatched} style={s.btnSecondary}>
-                            ✓ İZLEDİM
+                        <input
+                            style={s.input}
+                            type="text"
+                            placeholder="Video linkini buraya yapıştır..."
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                        />
+                        <button style={s.lockBtn} onClick={handleVideoLock}>
+                            🔒 VİDEOYU TÜNELE KİLİTLE
                         </button>
                     </>
                 )}
 
+                {/* STEP 1: İZLE (DISTRACTION-FREE) */}
                 {state.step === 1 && (
                     <>
-                        <p style={s.hint}>🎯 Hedef: {current.target} Soru</p>
+                        <div style={s.videoWrapper}>
+                            <iframe
+                                src={`https://www.youtube-nocookie.com/embed/${state.videoId}?rel=0&modestbranding=1&iv_load_policy=3`}
+                                style={s.iframe}
+                                title="Tunnel Player"
+                                allowFullScreen
+                            />
+                        </div>
+                        <button style={s.doneBtn} onClick={handleWatchComplete}>
+                            ✅ VİDEOYU BİTİRDİM
+                        </button>
+                    </>
+                )}
+
+                {/* STEP 2: ÇÖZ */}
+                {state.step === 2 && (
+                    <>
+                        <h2 style={s.targetTitle}>🎯 HEDEF: {current.target} SORU</h2>
                         <input
+                            style={s.input}
                             type="number"
                             placeholder="Kaç soru çözdün?"
-                            value={state.data.count}
-                            onChange={(e) => setState({ ...state, data: { ...state.data, count: e.target.value } })}
-                            style={s.input}
+                            value={state.count}
+                            onChange={(e) => setState({ ...state, count: e.target.value })}
                         />
-                        <button onClick={saveSolved} style={s.btn}>
+                        <button style={s.doneBtn} onClick={handleSolveSave}>
                             💾 KAYDET VE İLERLE
                         </button>
                     </>
                 )}
 
-                {state.step === 2 && (
+                {/* STEP 3: NOTLA (ACTIVE RECALL) */}
+                {state.step === 3 && (
                     <>
                         <p style={s.hint}>📝 Bu konudan ne öğrendin? (Active Recall)</p>
                         <textarea
-                            placeholder="3-5 cümle not al..."
-                            value={state.data.notes}
-                            onChange={(e) => setState({ ...state, data: { ...state.data, notes: e.target.value } })}
                             style={s.textarea}
-                            rows={4}
+                            rows={5}
+                            placeholder="3-5 cümle not al..."
+                            value={state.notes}
+                            onChange={(e) => setState({ ...state, notes: e.target.value })}
                         />
-                        <button onClick={saveNotes} style={s.btnSuccess}>
+                        <button style={s.finishBtn} onClick={handleComplete}>
                             ✅ KONUYU BİTİR
                         </button>
                     </>
@@ -251,12 +293,12 @@ export default function App() {
             {/* Stats */}
             {state.history.length > 0 && (
                 <div style={s.stats}>
-                    <div style={s.statItem}>
-                        <div style={s.statLabel}>Biten Konu</div>
+                    <div style={s.stat}>
+                        <div style={s.statLabel}>Biten</div>
                         <div style={s.statValue}>{state.history.length}</div>
                     </div>
-                    <div style={s.statItem}>
-                        <div style={s.statLabel}>Toplam Soru</div>
+                    <div style={s.stat}>
+                        <div style={s.statLabel}>Toplam</div>
                         <div style={s.statValue}>{totalSolved}</div>
                     </div>
                 </div>
@@ -274,196 +316,37 @@ export default function App() {
 }
 
 const s = {
-    body: {
-        minHeight: '100vh',
-        backgroundColor: '#000',
-        color: '#fff',
-        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-    },
-    toast: {
-        position: 'fixed',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: '#00ff88',
-        color: '#000',
-        padding: '12px 24px',
-        borderRadius: '8px',
-        fontWeight: 'bold',
-        fontSize: '14px',
-        zIndex: 1000,
-        animation: 'fadeIn 0.3s ease',
-    },
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: '11px',
-        color: '#666',
-        paddingTop: '30px',
-    },
+    app: { minHeight: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    toast: { position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#00ff88', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', zIndex: 1000, animation: 'fadeIn 0.3s' },
+    header: { display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666', paddingTop: '30px' },
     countdown: { fontWeight: 'bold' },
     module: { color: '#00ff88' },
-    position: {},
-    progressBar: {
-        width: '100%',
-        height: '4px',
-        backgroundColor: '#111',
-        borderRadius: '2px',
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        background: 'linear-gradient(90deg, #00ff88, #00cc66)',
-        transition: 'width 0.5s ease',
-    },
-    progressLabel: {
-        fontSize: '10px',
-        color: '#00ff88',
-        textAlign: 'center',
-        letterSpacing: '1px',
-    },
-    subject: {
-        textAlign: 'center',
-        padding: '20px 0',
-    },
-    tagCritical: {
-        display: 'inline-block',
-        background: '#ffaa00',
-        color: '#000',
-        padding: '5px 12px',
-        borderRadius: '5px',
-        fontSize: '10px',
-        fontWeight: 'bold',
-    },
-    tagNormal: {
-        display: 'inline-block',
-        background: '#1a1a1a',
-        color: '#666',
-        padding: '5px 12px',
-        borderRadius: '5px',
-        fontSize: '10px',
-    },
-    title: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        margin: '15px 0 5px',
-    },
-    meta: {
-        fontSize: '12px',
-        color: '#666',
-    },
-    steps: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        fontSize: '12px',
-        fontWeight: 'bold',
-    },
-    stepActive: {
-        color: '#00ff88',
-    },
-    stepInactive: {
-        color: '#333',
-    },
-    arrow: {
-        color: '#333',
-    },
-    actions: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        maxWidth: '400px',
-        margin: '0 auto',
-        width: '100%',
-    },
-    btn: {
-        padding: '16px',
-        background: 'linear-gradient(135deg, #fff, #e0e0e0)',
-        color: '#000',
-        border: 'none',
-        borderRadius: '10px',
-        fontWeight: 'bold',
-        fontSize: '15px',
-        cursor: 'pointer',
-        transition: 'transform 0.1s',
-    },
-    btnSecondary: {
-        padding: '14px',
-        background: '#1a1a1a',
-        color: '#fff',
-        border: '1px solid #333',
-        borderRadius: '10px',
-        fontWeight: 'bold',
-        fontSize: '14px',
-        cursor: 'pointer',
-        transition: 'transform 0.1s',
-    },
-    btnSuccess: {
-        padding: '16px',
-        background: 'linear-gradient(135deg, #00ff88, #00cc66)',
-        color: '#000',
-        border: 'none',
-        borderRadius: '10px',
-        fontWeight: 'bold',
-        fontSize: '15px',
-        cursor: 'pointer',
-        transition: 'transform 0.1s',
-    },
-    hint: {
-        fontSize: '13px',
-        color: '#888',
-        textAlign: 'center',
-        margin: 0,
-    },
-    input: {
-        padding: '15px',
-        background: '#0a0a0a',
-        border: '2px solid #222',
-        color: '#fff',
-        borderRadius: '10px',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        outline: 'none',
-    },
-    textarea: {
-        padding: '15px',
-        background: '#0a0a0a',
-        border: '2px solid #222',
-        color: '#fff',
-        borderRadius: '10px',
-        fontSize: '15px',
-        outline: 'none',
-        resize: 'vertical',
-        fontFamily: 'inherit',
-    },
-    stats: {
-        display: 'flex',
-        gap: '15px',
-        justifyContent: 'center',
-        marginTop: '20px',
-    },
-    statItem: {
-        textAlign: 'center',
-        padding: '15px',
-        background: '#0a0a0a',
-        borderRadius: '10px',
-        flex: 1,
-        maxWidth: '150px',
-    },
-    statLabel: {
-        fontSize: '10px',
-        color: '#666',
-        marginBottom: '5px',
-    },
-    statValue: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: '#00ff88',
-    },
+    counter: {},
+    progressBar: { width: '100%', height: '4px', backgroundColor: '#111', borderRadius: '2px', overflow: 'hidden' },
+    progressFill: { height: '100%', background: 'linear-gradient(90deg, #00ff88, #00cc66)', transition: 'width 0.5s' },
+    progressLabel: { fontSize: '10px', color: '#00ff88', textAlign: 'center', letterSpacing: '1px' },
+    subject: { textAlign: 'center', padding: '20px 0' },
+    tagCrit: { display: 'inline-block', background: '#ffaa00', color: '#000', padding: '5px 12px', borderRadius: '5px', fontSize: '10px', fontWeight: 'bold' },
+    tagNorm: { display: 'inline-block', background: '#1a1a1a', color: '#666', padding: '5px 12px', borderRadius: '5px', fontSize: '10px' },
+    title: { fontSize: '24px', fontWeight: 'bold', margin: '15px 0 5px' },
+    meta: { fontSize: '12px', color: '#666' },
+    steps: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '11px', fontWeight: 'bold' },
+    stepOn: { color: '#00ff88' },
+    stepOff: { color: '#333' },
+    arrow: { color: '#333' },
+    content: { flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '500px', margin: '0 auto', width: '100%' },
+    hint: { fontSize: '13px', color: '#888', textAlign: 'center', margin: 0 },
+    searchBtn: { padding: '14px', background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: '10px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' },
+    input: { padding: '15px', background: '#0a0a0a', border: '2px solid #222', color: '#fff', borderRadius: '10px', fontSize: '16px', textAlign: 'center', outline: 'none' },
+    lockBtn: { padding: '16px', background: 'linear-gradient(135deg, #fff, #e0e0e0)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' },
+    videoWrapper: { position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '10px', background: '#0a0a0a' },
+    iframe: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', borderRadius: '10px' },
+    doneBtn: { padding: '16px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' },
+    targetTitle: { fontSize: '18px', textAlign: 'center', color: '#00ff88', margin: 0 },
+    textarea: { padding: '15px', background: '#0a0a0a', border: '2px solid #222', color: '#fff', borderRadius: '10px', fontSize: '15px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' },
+    finishBtn: { padding: '16px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' },
+    stats: { display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '15px' },
+    stat: { textAlign: 'center', padding: '15px', background: '#0a0a0a', borderRadius: '10px', flex: 1, maxWidth: '120px' },
+    statLabel: { fontSize: '10px', color: '#666', marginBottom: '5px' },
+    statValue: { fontSize: '22px', fontWeight: 'bold', color: '#00ff88' },
 };
