@@ -64,6 +64,7 @@ export default function App() {
     const [url, setUrl] = useState('');
     const [toast, setToast] = useState(null);
     const [tool, setTool] = useState('pen');
+    const [penMode, setPenMode] = useState(false); // Kalem modu aktif mi?
     const [pdfUrl, setPdfUrl] = useState(null);
 
     const canvasRef = useRef(null);
@@ -76,7 +77,7 @@ export default function App() {
 
     const showToast = (msg) => {
         setToast(msg);
-        setTimeout(() => setToast(null), 3000);
+        setTimeout(() => setToast(null), 2500);
     };
 
     const extractVideoID = (url) => {
@@ -104,7 +105,8 @@ export default function App() {
             return;
         }
 
-        const driveUrl = `https://docs.google.com/viewer?srcid=${fileId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`;
+        // Google Drive direkt preview - daha iyi çalışır
+        const driveUrl = `https://drive.google.com/file/d/${fileId}/preview`;
         setPdfUrl(driveUrl);
 
         setTimeout(() => {
@@ -121,6 +123,7 @@ export default function App() {
 
     const handleDayComplete = () => {
         setPdfUrl(null);
+        setPenMode(false);
 
         const record = {
             day: CURRICULUM_105[state.dayIdx].d,
@@ -145,6 +148,7 @@ export default function App() {
 
     // Canvas functions
     const startDrawing = (e) => {
+        if (!penMode) return;
         setIsDrawing(true);
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -155,7 +159,7 @@ export default function App() {
     };
 
     const draw = (e) => {
-        if (!isDrawing) return;
+        if (!isDrawing || !penMode) return;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         const rect = canvas.getBoundingClientRect();
@@ -243,22 +247,37 @@ export default function App() {
                                         </button>
                                     ) : (
                                         <>
-                                            <div style={s.toolbar}>
+                                            {/* FLOATING TOOLBAR */}
+                                            <div style={s.floatingToolbar}>
                                                 <button
-                                                    style={{ ...s.toolBtn, ...(tool === 'pen' ? s.toolActive : {}) }}
-                                                    onClick={() => setTool('pen')}
+                                                    style={{ ...s.floatBtn, ...(penMode ? s.floatBtnActive : {}) }}
+                                                    onClick={() => {
+                                                        setPenMode(!penMode);
+                                                        showToast(penMode ? "🖱️ Kalem kapatıldı" : "✏️ Kalem açıldı");
+                                                    }}
                                                 >
-                                                    ✏️ KALEM
+                                                    {penMode ? "🖱️ KALEMI BIRAK" : "✏️ KALEM AL"}
                                                 </button>
-                                                <button
-                                                    style={{ ...s.toolBtn, ...(tool === 'eraser' ? s.toolActive : {}) }}
-                                                    onClick={() => setTool('eraser')}
-                                                >
-                                                    🧹 SİLGİ
-                                                </button>
-                                                <button style={s.toolBtn} onClick={clearCanvas}>
-                                                    🗑️ TEMİZLE
-                                                </button>
+
+                                                {penMode && (
+                                                    <>
+                                                        <button
+                                                            style={{ ...s.floatBtn, ...(tool === 'pen' ? s.floatBtnActive : {}) }}
+                                                            onClick={() => setTool('pen')}
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                        <button
+                                                            style={{ ...s.floatBtn, ...(tool === 'eraser' ? s.floatBtnActive : {}) }}
+                                                            onClick={() => setTool('eraser')}
+                                                        >
+                                                            🧹
+                                                        </button>
+                                                        <button style={s.floatBtn} onClick={clearCanvas}>
+                                                            🗑️
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
 
                                             <div style={s.pdfContainer} ref={pdfContainerRef}>
@@ -266,10 +285,15 @@ export default function App() {
                                                     src={pdfUrl}
                                                     style={s.pdfViewer}
                                                     title="Drive PDF"
+                                                    allow="autoplay"
                                                 />
                                                 <canvas
                                                     ref={canvasRef}
-                                                    style={s.canvasLayer}
+                                                    style={{
+                                                        ...s.canvasLayer,
+                                                        pointerEvents: penMode ? 'auto' : 'none',
+                                                        cursor: penMode ? 'crosshair' : 'default'
+                                                    }}
                                                     onMouseDown={startDrawing}
                                                     onMouseMove={draw}
                                                     onMouseUp={stopDrawing}
@@ -342,13 +366,46 @@ const s = {
     lockBtn: { padding: '18px', background: 'linear-gradient(135deg, #fff, #e0e0e0)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     pdfBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
 
-    toolbar: { display: 'flex', gap: '10px', marginBottom: '15px', justifyContent: 'center' },
-    toolBtn: { padding: '12px 20px', background: '#1a1a1a', border: '1px solid #333', color: '#888', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' },
-    toolActive: { background: '#00ff88', color: '#000', borderColor: '#00ff88' },
+    // FLOATING TOOLBAR (Yüzen araç kutusu)
+    floatingToolbar: {
+        position: 'fixed',
+        bottom: '30px',
+        right: '30px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        zIndex: 999,
+        background: 'rgba(0, 0, 0, 0.8)',
+        padding: '15px',
+        borderRadius: '15px',
+        border: '1px solid #333',
+        backdropFilter: 'blur(10px)'
+    },
+    floatBtn: {
+        padding: '12px 16px',
+        background: '#1a1a1a',
+        border: '1px solid #333',
+        color: '#888',
+        borderRadius: '10px',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: 'bold',
+        transition: 'all 0.2s',
+        whiteSpace: 'nowrap'
+    },
+    floatBtnActive: { background: '#00ff88', color: '#000', borderColor: '#00ff88' },
 
-    pdfContainer: { position: 'relative', width: '100%', height: '500px', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' },
+    pdfContainer: { position: 'relative', width: '100%', height: '600px', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '2px solid #222' },
     pdfViewer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' },
-    canvasLayer: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', pointerEvents: 'all' },
+    canvasLayer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        touchAction: 'none',
+        zIndex: 10
+    },
 
     doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     finishBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
