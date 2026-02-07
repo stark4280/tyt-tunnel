@@ -104,28 +104,45 @@ export default function App() {
     };
 
     const openPDF = async () => {
+        console.log("🔍 PDF butonu tıklandı");
+
         const current = CURRICULUM_105[state.dayIdx];
         const fileId = DEFAULT_FILE_IDS[current.pdf];
 
         if (!fileId) {
+            console.error("❌ File ID bulunamadı:", current.pdf);
             showToast("⚠️ PDF bulunamadı!");
             return;
         }
+
+        if (!window.pdfjsLib) {
+            console.error("❌ PDF.js yüklenmemiş!");
+            showToast("⚠️ PDF.js kütüphanesi yüklenmedi, sayfa yenileniyor...");
+            setTimeout(() => window.location.reload(), 2000);
+            return;
+        }
+
+        console.log("✅ PDF.js hazır, File ID:", fileId);
 
         setLoading(true);
         showToast("📥 PDF yükleniyor...");
 
         try {
             const downloadUrl = `https://docs.google.com/uc?id=${fileId}&export=download`;
-            const response = await fetch(downloadUrl);
+            console.log("📥 İndirme başladı:", downloadUrl);
 
-            if (!response.ok) throw new Error('Download failed');
+            const response = await fetch(downloadUrl, { mode: 'cors' });
+            console.log("📦 Response status:", response.status);
+
+            if (!response.ok) throw new Error(`Download failed: ${response.status}`);
 
             const arrayBuffer = await response.arrayBuffer();
+            console.log("✅ ArrayBuffer alındı, boyut:", arrayBuffer.byteLength);
 
             // Load PDF with PDF.js
             const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
             const pdf = await loadingTask.promise;
+            console.log("✅ PDF yüklendi, sayfa sayısı:", pdf.numPages);
 
             setPdfDoc(pdf);
             setNumPages(pdf.numPages);
@@ -134,14 +151,15 @@ export default function App() {
             showToast(`✅ PDF yüklendi (${pdf.numPages} sayfa)`);
 
             // Render first page
-            renderPage(pdf, 1);
+            await renderPage(pdf, 1);
         } catch (error) {
-            showToast("❌ PDF yüklenemedi!");
-            console.error(error);
+            console.error("❌ PDF yükleme hatası:", error);
+            showToast(`❌ Hata: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
+
 
     const renderPage = async (pdf, pageNum) => {
         const page = await pdf.getPage(pageNum);
