@@ -1,568 +1,469 @@
 import React, { useState, useEffect } from 'react';
 
-// --- EKSİKSİZ VE TAM TYT MÜFREDATI (75+ KONU) ---
+// --- FULL TYT CURRICULUM (78 TOPICS) ---
 const FULL_DB = [
     // TÜRKÇE
-    { c: "TÜRKÇE", n: "Sözcükte Anlam", q: 3, target: 60, s: false, yt: "TYT+Turkce+Sozcukte+Anlam" },
-    { c: "TÜRKÇE", n: "Cümlede Anlam", q: 4, target: 60, s: false, yt: "TYT+Turkce+Cumlede+Anlam" },
-    { c: "TÜRKÇE", n: "Paragrafta Anlatım Teknikleri", q: 4, target: 100, s: true, yt: "TYT+Turkce+Paragraf+Anlatim+Teknikleri" },
-    { c: "TÜRKÇE", n: "Paragrafta Ana Düşünce", q: 22, target: 150, s: true, yt: "TYT+Turkce+Paragraf+Ana+Dusunce" },
-    { c: "TÜRKÇE", n: "Ses Bilgisi", q: 1, target: 40, s: false, yt: "TYT+Turkce+Ses+Bilgisi" },
-    { c: "TÜRKÇE", n: "Yazım Kuralları", q: 2, target: 60, s: true, yt: "TYT+Turkce+Yazim+Kurallari" },
-    { c: "TÜRKÇE", n: "Noktalama İşaretleri", q: 2, target: 60, s: true, yt: "TYT+Turkce+Noktalama+Isaretleri" },
-    { c: "TÜRKÇE", n: "Sözcük Yapısı ve Ekler", q: 1, target: 50, s: false, yt: "TYT+Turkce+Sozcuk+Yapisi" },
-    { c: "TÜRKÇE", n: "İsimler, Sıfatlar, Zamirler", q: 1, target: 60, s: false, yt: "TYT+Turkce+Sozcuk+Turleri" },
-    { c: "TÜRKÇE", n: "Zarflar, Edatlar, Bağlaçlar", q: 1, target: 60, s: false, yt: "TYT+Turkce+Zarf+Edat+Baglac" },
-    { c: "TÜRKÇE", n: "Fiiller ve Fiilimsiler", q: 1, target: 60, s: false, yt: "TYT+Turkce+Fiiller" },
-    { c: "TÜRKÇE", n: "Cümlenin Ögeleri", q: 1, target: 50, s: true, yt: "TYT+Turkce+Cumlenin+Ogeleri" },
+    { c: "TÜRKÇE", n: "Sözcükte Anlam", q: 3, target: 60, s: false },
+    { c: "TÜRKÇE", n: "Cümlede Anlam", q: 4, target: 60, s: false },
+    { c: "TÜRKÇE", n: "Paragrafta Anlatım Teknikleri", q: 4, target: 100, s: true },
+    { c: "TÜRKÇE", n: "Paragrafta Ana Düşünce", q: 22, target: 150, s: true },
+    { c: "TÜRKÇE", n: "Ses Bilgisi", q: 1, target: 40, s: false },
+    { c: "TÜRKÇE", n: "Yazım Kuralları", q: 2, target: 60, s: true },
+    { c: "TÜRKÇE", n: "Noktalama İşaretleri", q: 2, target: 60, s: true },
+    { c: "TÜRKÇE", n: "Sözcük Yapısı ve Ekler", q: 1, target: 50, s: false },
+    { c: "TÜRKÇE", n: "İsimler, Sıfatlar, Zamirler", q: 1, target: 60, s: false },
+    { c: "TÜRKÇE", n: "Zarflar, Edatlar, Bağlaçlar", q: 1, target: 60, s: false },
+    { c: "TÜRKÇE", n: "Fiiller ve Fiilimsiler", q: 1, target: 60, s: false },
+    { c: "TÜRKÇE", n: "Cümlenin Ögeleri", q: 1, target: 50, s: true },
 
     // MATEMATİK
-    { c: "MATEMATİK", n: "Temel Kavramlar", q: 3, target: 100, s: true, yt: "TYT+Matematik+Temel+Kavramlar" },
-    { c: "MATEMATİK", n: "Sayı Basamakları", q: 2, target: 60, s: false, yt: "TYT+Matematik+Sayi+Basamaklari" },
-    { c: "MATEMATİK", n: "Bölme ve Bölünebilme", q: 2, target: 60, s: false, yt: "TYT+Matematik+Bolme+Bolunebilme" },
-    { c: "MATEMATİK", n: "EBOB - EKOK", q: 1, target: 50, s: false, yt: "TYT+Matematik+Ebob+Ekok" },
-    { c: "MATEMATİK", n: "Rasyonel Sayılar", q: 1, target: 40, s: true, yt: "TYT+Matematik+Rasyonel+Sayilar" },
-    { c: "MATEMATİK", n: "Basit Eşitsizlikler", q: 1, target: 50, s: false, yt: "TYT+Matematik+Basit+Esitsizlikler" },
-    { c: "MATEMATİK", n: "Mutlak Değer", q: 1, target: 60, s: true, yt: "TYT+Matematik+Mutlak+Deger" },
-    { c: "MATEMATİK", n: "Üslü Sayılar", q: 1, target: 80, s: true, yt: "TYT+Matematik+Uslu+Sayilar" },
-    { c: "MATEMATİK", n: "Köklü Sayılar", q: 1, target: 80, s: true, yt: "TYT+Matematik+Koklu+Sayilar" },
-    { c: "MATEMATİK", n: "Çarpanlara Ayırma", q: 1, target: 60, s: false, yt: "TYT+Matematik+Carpanlara+Ayirma" },
-    { c: "MATEMATİK", n: "Oran - Orantı", q: 1, target: 50, s: false, yt: "TYT+Matematik+Oran+Oranti" },
-    { c: "MATEMATİK", n: "Denklem Çözme", q: 1, target: 40, s: false, yt: "TYT+Matematik+Denklem+Cozme" },
-    { c: "MATEMATİK", n: "Sayı ve Kesir Problemleri", q: 5, target: 200, s: true, yt: "TYT+Matematik+Sayi+Kesir+Problemleri" },
-    { c: "MATEMATİK", n: "Yaş Problemleri", q: 1, target: 50, s: false, yt: "TYT+Matematik+Yas+Problemleri" },
-    { c: "MATEMATİK", n: "Hız ve Hareket Problemleri", q: 1, target: 60, s: true, yt: "TYT+Matematik+Hiz+Problemleri" },
-    { c: "MATEMATİK", n: "Yüzde, Kar-Zarar Problemleri", q: 2, target: 100, s: true, yt: "TYT+Matematik+Yuzde+Problemleri" },
-    { c: "MATEMATİK", n: "Karışım ve Grafik Problemleri", q: 1, target: 50, s: false, yt: "TYT+Matematik+Grafik+Problemleri" },
-    { c: "MATEMATİK", n: "Kümeler", q: 2, target: 80, s: true, yt: "TYT+Matematik+Kumeler" },
-    { c: "MATEMATİK", n: "Fonksiyonlar", q: 2, target: 100, s: true, yt: "TYT+Matematik+Fonksiyonlar" },
-    { c: "MATEMATİK", n: "Permütasyon ve Kombinasyon", q: 1, target: 60, s: false, yt: "TYT+Matematik+Permutasyon+Kombinasyon" },
-    { c: "MATEMATİK", n: "Olasılık", q: 1, target: 60, s: true, yt: "TYT+Matematik+Olasilik" },
-    { c: "MATEMATİK", n: "Veri ve İstatistik", q: 1, target: 40, s: false, yt: "TYT+Matematik+Veri+Istatistik" },
-    { c: "MATEMATİK", n: "Mantık", q: 1, target: 40, s: false, yt: "TYT+Matematik+Mantik" },
+    { c: "MATEMATİK", n: "Temel Kavramlar", q: 3, target: 100, s: true },
+    { c: "MATEMATİK", n: "Sayı Basamakları", q: 2, target: 60, s: false },
+    { c: "MATEMATİK", n: "Bölme ve Bölünebilme", q: 2, target: 60, s: false },
+    { c: "MATEMATİK", n: "EBOB - EKOK", q: 1, target: 50, s: false },
+    { c: "MATEMATİK", n: "Rasyonel Sayılar", q: 1, target: 40, s: true },
+    { c: "MATEMATİK", n: "Basit Eşitsizlikler", q: 1, target: 50, s: false },
+    { c: "MATEMATİK", n: "Mutlak Değer", q: 1, target: 60, s: true },
+    { c: "MATEMATİK", n: "Üslü Sayılar", q: 1, target: 80, s: true },
+    { c: "MATEMATİK", n: "Köklü Sayılar", q: 1, target: 80, s: true },
+    { c: "MATEMATİK", n: "Çarpanlara Ayırma", q: 1, target: 60, s: false },
+    { c: "MATEMATİK", n: "Oran - Orantı", q: 1, target: 50, s: false },
+    { c: "MATEMATİK", n: "Denklem Çözme", q: 1, target: 40, s: false },
+    { c: "MATEMATİK", n: "Sayı ve Kesir Problemleri", q: 5, target: 200, s: true },
+    { c: "MATEMATİK", n: "Yaş Problemleri", q: 1, target: 50, s: false },
+    { c: "MATEMATİK", n: "Hız ve Hareket Problemleri", q: 1, target: 60, s: true },
+    { c: "MATEMATİK", n: "Yüzde, Kar-Zarar Problemleri", q: 2, target: 100, s: true },
+    { c: "MATEMATİK", n: "Karışım ve Grafik Problemleri", q: 1, target: 50, s: false },
+    { c: "MATEMATİK", n: "Kümeler", q: 2, target: 80, s: true },
+    { c: "MATEMATİK", n: "Fonksiyonlar", q: 2, target: 100, s: true },
+    { c: "MATEMATİK", n: "Permütasyon ve Kombinasyon", q: 1, target: 60, s: false },
+    { c: "MATEMATİK", n: "Olasılık", q: 1, target: 60, s: true },
+    { c: "MATEMATİK", n: "Veri ve İstatistik", q: 1, target: 40, s: false },
+    { c: "MATEMATİK", n: "Mantık", q: 1, target: 40, s: false },
 
     // GEOMETRİ
-    { c: "GEOMETRİ", n: "Doğruda ve Üçgende Açılar", q: 1, target: 80, s: true, yt: "TYT+Geometri+Ucgende+Acilar" },
-    { c: "GEOMETRİ", n: "Dik ve Özel Üçgenler", q: 2, target: 100, s: true, yt: "TYT+Geometri+Ozel+Ucgenler" },
-    { c: "GEOMETRİ", n: "Üçgende Alan ve Benzerlik", q: 2, target: 100, s: true, yt: "TYT+Geometri+Ucgende+Benzerlik" },
-    { c: "GEOMETRİ", n: "Çokgenler ve Dörtgenler", q: 2, target: 80, s: false, yt: "TYT+Geometri+Dortgenler" },
-    { c: "GEOMETRİ", n: "Çember ve Daire", q: 1, target: 60, s: false, yt: "TYT+Geometri+Cember+Daire" },
-    { c: "GEOMETRİ", n: "Katı Cisimler", q: 2, target: 80, s: true, yt: "TYT+Geometri+Kati+Cisimler" },
+    { c: "GEOMETRİ", n: "Doğruda ve Üçgende Açılar", q: 1, target: 80, s: true },
+    { c: "GEOMETRİ", n: "Dik ve Özel Üçgenler", q: 2, target: 100, s: true },
+    { c: "GEOMETRİ", n: "Üçgende Alan ve Benzerlik", q: 2, target: 100, s: true },
+    { c: "GEOMETRİ", n: "Çokgenler ve Dörtgenler", q: 2, target: 80, s: false },
+    { c: "GEOMETRİ", n: "Çember ve Daire", q: 1, target: 60, s: false },
+    { c: "GEOMETRİ", n: "Katı Cisimler", q: 2, target: 80, s: true },
 
     // FİZİK
-    { c: "FİZİK", n: "Fizik Bilimine Giriş", q: 1, target: 30, s: false, yt: "TYT+Fizik+Bilimine+Giris" },
-    { c: "FİZİK", n: "Madde ve Özellikleri", q: 1, target: 40, s: false, yt: "TYT+Fizik+Madde+ve+Ozellikleri" },
-    { c: "FİZİK", n: "Hareket ve Kuvvet", q: 1, target: 60, s: true, yt: "TYT+Fizik+Hareket+ve+Kuvvet" },
-    { c: "FİZİK", n: "Enerji", q: 1, target: 40, s: false, yt: "TYT+Fizik+Enerji" },
-    { c: "FİZİK", n: "Isı, Sıcaklık ve Genleşme", q: 1, target: 50, s: true, yt: "TYT+Fizik+Isi+Sicaklik" },
-    { c: "FİZİK", n: "Elektrik ve Manyetizma", q: 1, target: 60, s: false, yt: "TYT+Fizik+Elektrik" },
-    { c: "FİZİK", n: "Basınç ve Kaldırma Kuvveti", q: 1, target: 50, s: false, yt: "TYT+Fizik+Basinc" },
-    { c: "FİZİK", n: "Dalgalar", q: 1, target: 40, s: false, yt: "TYT+Fizik+Dalgalar" },
-    { c: "FİZİK", n: "Optik", q: 2, target: 100, s: true, yt: "TYT+Fizik+Optik" },
+    { c: "FİZİK", n: "Fizik Bilimine Giriş", q: 1, target: 30, s: false },
+    { c: "FİZİK", n: "Madde ve Özellikleri", q: 1, target: 40, s: false },
+    { c: "FİZİK", n: "Hareket ve Kuvvet", q: 1, target: 60, s: true },
+    { c: "FİZİK", n: "Enerji", q: 1, target: 40, s: false },
+    { c: "FİZİK", n: "Isı, Sıcaklık ve Genleşme", q: 1, target: 50, s: true },
+    { c: "FİZİK", n: "Elektrik ve Manyetizma", q: 1, target: 60, s: false },
+    { c: "FİZİK", n: "Basınç ve Kaldırma Kuvveti", q: 1, target: 50, s: false },
+    { c: "FİZİK", n: "Dalgalar", q: 1, target: 40, s: false },
+    { c: "FİZİK", n: "Optik", q: 2, target: 100, s: true },
 
     // KİMYA
-    { c: "KİMYA", n: "Kimya Bilimi", q: 1, target: 30, s: false, yt: "TYT+Kimya+Bilimi" },
-    { c: "KİMYA", n: "Atomun Yapısı", q: 1, target: 40, s: true, yt: "TYT+Kimya+Atomun+Yapisi" },
-    { c: "KİMYA", n: "Periyodik Sistem", q: 1, target: 40, s: true, yt: "TYT+Kimya+Periyodik+Sistem" },
-    { c: "KİMYA", n: "Kimyasal Türler Arası Etkileşimler", q: 1, target: 60, s: true, yt: "TYT+Kimya+Etkilesimler" },
-    { c: "KİMYA", n: "Maddenin Halleri", q: 1, target: 40, s: false, yt: "TYT+Kimya+Maddenin+Halleri" },
-    { c: "KİMYA", n: "Kimyanın Temel Kanunları", q: 1, target: 50, s: true, yt: "TYT+Kimya+Kanunlar" },
-    { c: "KİMYA", n: "Karışımlar", q: 1, target: 40, s: false, yt: "TYT+Kimya+Karisimlar" },
-    { c: "KİMYA", n: "Asitler, Bazlar ve Tuzlar", q: 1, target: 50, s: true, yt: "TYT+Kimya+Asitler+Bazlar" },
+    { c: "KİMYA", n: "Kimya Bilimi", q: 1, target: 30, s: false },
+    { c: "KİMYA", n: "Atomun Yapısı", q: 1, target: 40, s: true },
+    { c: "KİMYA", n: "Periyodik Sistem", q: 1, target: 40, s: true },
+    { c: "KİMYA", n: "Kimyasal Türler Arası Etkileşimler", q: 1, target: 60, s: true },
+    { c: "KİMYA", n: "Maddenin Halleri", q: 1, target: 40, s: false },
+    { c: "KİMYA", n: "Kimyanın Temel Kanunları", q: 1, target: 50, s: true },
+    { c: "KİMYA", n: "Karışımlar", q: 1, target: 40, s: false },
+    { c: "KİMYA", n: "Asitler, Bazlar ve Tuzlar", q: 1, target: 50, s: true },
 
     // BİYOLOJİ
-    { c: "BİYOLOJİ", n: "Canlıların Ortak Özellikleri", q: 1, target: 30, s: false, yt: "TYT+Biyoloji+Ortak+Ozellikler" },
-    { c: "BİYOLOJİ", n: "Hücre ve Yapısı", q: 1, target: 50, s: true, yt: "TYT+Biyoloji+Hucre" },
-    { c: "BİYOLOJİ", n: "Canlıların Sınıflandırılması", q: 1, target: 40, s: false, yt: "TYT+Biyoloji+Siniflandirma" },
-    { c: "BİYOLOJİ", n: "Hücre Bölünmeleri", q: 1, target: 50, s: true, yt: "TYT+Biyoloji+Hucre+Bolunmeleri" },
-    { c: "BİYOLOJİ", n: "Kalıtım", q: 1, target: 80, s: true, yt: "TYT+Biyoloji+Kalitim" },
-    { c: "BİYOLOJİ", n: "Ekosistem Ekolojisi", q: 1, target: 40, s: false, yt: "TYT+Biyoloji+Ekoloji" },
+    { c: "BİYOLOJİ", n: "Canlıların Ortak Özellikleri", q: 1, target: 30, s: false },
+    { c: "BİYOLOJİ", n: "Hücre ve Yapısı", q: 1, target: 50, s: true },
+    { c: "BİYOLOJİ", n: "Canlıların Sınıflandırılması", q: 1, target: 40, s: false },
+    { c: "BİYOLOJİ", n: "Hücre Bölünmeleri", q: 1, target: 50, s: true },
+    { c: "BİYOLOJİ", n: "Kalıtım", q: 1, target: 80, s: true },
+    { c: "BİYOLOJİ", n: "Ekosistem Ekolojisi", q: 1, target: 40, s: false },
 
-    // SOSYAL (Özetlenmiş Kritikler)
-    { c: "TARİH", n: "Tarih ve Zaman - İlk Türk Devletleri", q: 1, target: 40, s: true, yt: "TYT+Tarih+Ilk+Turk+Devletleri" },
-    { c: "TARİH", n: "Osmanlı Devleti Kuruluş ve Yükselme", q: 1, target: 40, s: false, yt: "TYT+Tarih+Osmanli+Siyasi" },
-    { c: "TARİH", n: "Milli Mücadele Hazırlık", q: 1, target: 50, s: true, yt: "TYT+Tarih+Milli+Mucadele" },
-    { c: "TARİH", n: "Atatürk İlkeleri ve İnkılaplar", q: 2, target: 50, s: true, yt: "TYT+Tarih+Inkilaplar" },
-    { c: "COĞRAFYA", n: "Harita Bilgisi", q: 1, target: 30, s: true, yt: "TYT+Cografya+Harita+Bilgisi" },
-    { c: "COĞRAFYA", n: "İklim Bilgisi", q: 1, target: 40, s: true, yt: "TYT+Cografya+Iklim+Bilgisi" },
-    { c: "COĞRAFYA", n: "Nüfus ve Yerleşme", q: 1, target: 30, s: true, yt: "TYT+Cografya+Nufus" },
-    { c: "FELSEFE", n: "Felsefenin Temel Konuları", q: 5, target: 50, s: false, yt: "TYT+Felsefe+Konu+Anlatimi" },
-    { c: "DİN", n: "Din Kültürü Temel Kavramlar", q: 5, target: 50, s: true, yt: "TYT+Din+Kulturu+Kavramlar" }
+    // SOSYAL
+    { c: "TARİH", n: "Tarih ve Zaman - İlk Türk Devletleri", q: 1, target: 40, s: true },
+    { c: "TARİH", n: "Osmanlı Devleti Kuruluş ve Yükselme", q: 1, target: 40, s: false },
+    { c: "TARİH", n: "Milli Mücadele Hazırlık", q: 1, target: 50, s: true },
+    { c: "TARİH", n: "Atatürk İlkeleri ve İnkılaplar", q: 2, target: 50, s: true },
+    { c: "COĞRAFYA", n: "Harita Bilgisi", q: 1, target: 30, s: true },
+    { c: "COĞRAFYA", n: "İklim Bilgisi", q: 1, target: 40, s: true },
+    { c: "COĞRAFYA", n: "Nüfus ve Yerleşme", q: 1, target: 30, s: true },
+    { c: "FELSEFE", n: "Felsefenin Temel Konuları", q: 5, target: 50, s: false },
+    { c: "DİN", n: "Din Kültürü Temel Kavramlar", q: 5, target: 50, s: true }
 ];
 
 export default function App() {
-    const [progress, setProgress] = useState(() => {
-        const saved = localStorage.getItem('tyt_study_v3');
-        return saved ? JSON.parse(saved) : { subjectIndex: 0, stepIndex: 0, showVideo: false };
+    const [state, setState] = useState(() => {
+        const saved = localStorage.getItem('tunnel_v52');
+        return saved ? JSON.parse(saved) : { idx: 0, step: 0, data: { count: '', notes: '' }, history: [] };
     });
 
-    const [questionCount, setQuestionCount] = useState("");
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        localStorage.setItem('tyt_study_v3', JSON.stringify(progress));
-    }, [progress]);
+        localStorage.setItem('tunnel_v52', JSON.stringify(state));
+    }, [state]);
 
-    const current = FULL_DB[progress.subjectIndex];
+    const current = FULL_DB[state.idx];
     const examDate = new Date("2026-06-20");
     const daysLeft = Math.ceil((examDate - new Date()) / (1000 * 60 * 60 * 24));
-    const completionPercentage = Math.round((progress.subjectIndex / FULL_DB.length) * 100);
+    const progress = Math.round((state.idx / FULL_DB.length) * 100);
 
-    const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 3000);
+    const totalSolved = state.history.reduce((sum, h) => sum + (Number(h.count) || 0), 0);
+    const totalTarget = FULL_DB.reduce((sum, t) => sum + t.target, 0);
+
+    const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 2500);
     };
 
-    const handleOpenVideo = () => {
-        setProgress({ ...progress, stepIndex: 1, showVideo: true });
+    const openVideo = () => {
+        const query = `TYT ${current.c} ${current.n} Konu Anlatimi`.replace(/ /g, '+');
+        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+        showToast("Video sayfası açıldı. İzleyip dön.");
     };
 
-    const handleCloseVideo = () => {
-        setProgress({ ...progress, showVideo: false });
+    const confirmWatched = () => {
+        setState({ ...state, step: 1 });
+        showToast("Adım 2: Soru çözmeye başla.");
     };
 
-    const handleSaveProgress = () => {
-        const count = Number(questionCount);
-        if (!questionCount || count < 10) {
-            showToast("❌ En az 10 soru çözmelisin!", 'error');
+    const saveSolved = () => {
+        const count = Number(state.data.count);
+        if (!count || count < 10) {
+            showToast("En az 10 soru çözmelisin.");
+            return;
+        }
+        setState({ ...state, step: 2 });
+        showToast(`${count} soru kaydedildi. Adım 3'e geç.`);
+    };
+
+    const saveNotes = () => {
+        if (!state.data.notes || state.data.notes.trim().length < 20) {
+            showToast("En az 20 karakter not almalısın.");
             return;
         }
 
-        showToast(`✅ ${count} soru kaydedildi! Tebrikler!`, 'success');
-        setTimeout(() => {
-            setProgress({ ...progress, stepIndex: 2, showVideo: false });
-            setQuestionCount("");
-        }, 1000);
-    };
+        const record = {
+            topic: current.n,
+            count: Number(state.data.count),
+            notes: state.data.notes,
+            date: new Date().toISOString()
+        };
 
-    const handleNextSubject = () => {
-        if (progress.subjectIndex < FULL_DB.length - 1) {
-            setProgress({ subjectIndex: progress.subjectIndex + 1, stepIndex: 0, showVideo: false });
-            setQuestionCount("");
-            showToast("📚 Yeni konuya geçildi!", 'info');
+        if (state.idx < FULL_DB.length - 1) {
+            setState({
+                idx: state.idx + 1,
+                step: 0,
+                data: { count: '', notes: '' },
+                history: [...state.history, record]
+            });
+            showToast("Konu tamamlandı. Sıradaki konuya geçiliyor.");
         } else {
-            showToast("🎉 TEBRİKLER! TÜM MÜFREDATI BİTİRDİN!", 'success');
-        }
-    };
-
-    const handlePreviousSubject = () => {
-        if (progress.subjectIndex > 0) {
-            setProgress({ subjectIndex: progress.subjectIndex - 1, stepIndex: 0, showVideo: false });
-            setQuestionCount("");
-            showToast("⬅️ Önceki konuya dönüldü", 'info');
-        }
-    };
-
-    const jumpToStep = (stepIdx) => {
-        if (stepIdx <= progress.stepIndex) {
-            setProgress({ ...progress, stepIndex: stepIdx });
+            setState({
+                ...state,
+                history: [...state.history, record]
+            });
+            showToast("TEBRİKLER! TÜM MÜFREDATI BİTİRDİN!");
         }
     };
 
     return (
-        <div style={styles.body}>
-            {/* Toast Notification */}
-            {toast && (
-                <div style={{
-                    ...styles.toast,
-                    backgroundColor: toast.type === 'error' ? '#ff4444' : toast.type === 'info' ? '#4488ff' : '#00ff88',
-                }}>
-                    {toast.message}
-                </div>
-            )}
+        <div style={s.body}>
+            {toast && <div style={s.toast}>{toast}</div>}
 
-            {/* Status Bar */}
-            <div style={styles.statusBar}>
-                <span style={styles.statusItem}>📅 {daysLeft} GÜN</span>
-                <span style={styles.statusItem}>{current.c}</span>
-                <span style={styles.statusItem}>{progress.subjectIndex + 1}/{FULL_DB.length}</span>
+            {/* Header */}
+            <div style={s.header}>
+                <div style={s.countdown}>⏱ {daysLeft} GÜN</div>
+                <div style={s.module}>{current.c}</div>
+                <div style={s.position}>{state.idx + 1}/{FULL_DB.length}</div>
             </div>
 
-            {/* Video Overlay */}
-            {progress.showVideo && (
-                <div style={styles.videoOverlay}>
-                    <div style={styles.videoHeader}>
-                        <span style={styles.videoTitle}>▶ {current.n}</span>
-                        <button onClick={handleCloseVideo} style={styles.closeBtn}>✕ KAPAT</button>
+            {/* Progress Bar */}
+            <div style={s.progressBar}>
+                <div style={{ ...s.progressFill, width: `${progress}%` }} />
+            </div>
+            <div style={s.progressLabel}>{progress}% | {totalSolved}/{totalTarget} SORU</div>
+
+            {/* Subject Info */}
+            <div style={s.subject}>
+                <div style={current.s ? s.tagCritical : s.tagNormal}>
+                    {current.s ? "★ YÜK. PUAN" : "○ TEMEL"}
+                </div>
+                <h1 style={s.title}>{current.n}</h1>
+                <p style={s.meta}>Sınavda ~{current.q} Soru | Hedef: {current.target} Soru</p>
+            </div>
+
+            {/* Steps */}
+            <div style={s.steps}>
+                <div style={state.step >= 0 ? s.stepActive : s.stepInactive}>1. İZLE</div>
+                <div style={s.arrow}>→</div>
+                <div style={state.step >= 1 ? s.stepActive : s.stepInactive}>2. ÇÖZ</div>
+                <div style={s.arrow}>→</div>
+                <div style={state.step >= 2 ? s.stepActive : s.stepInactive}>3. ANALİZ</div>
+            </div>
+
+            {/* Actions */}
+            <div style={s.actions}>
+                {state.step === 0 && (
+                    <>
+                        <button onClick={openVideo} style={s.btn}>
+                            🎬 VİDEO ARAMASINI BAŞLAT
+                        </button>
+                        <p style={s.hint}>En iyi anladığın hocayı seç, izle ve buraya dönüp onay ver.</p>
+                        <button onClick={confirmWatched} style={s.btnSecondary}>
+                            ✓ İZLEDİM
+                        </button>
+                    </>
+                )}
+
+                {state.step === 1 && (
+                    <>
+                        <p style={s.hint}>🎯 Hedef: {current.target} Soru</p>
+                        <input
+                            type="number"
+                            placeholder="Kaç soru çözdün?"
+                            value={state.data.count}
+                            onChange={(e) => setState({ ...state, data: { ...state.data, count: e.target.value } })}
+                            style={s.input}
+                        />
+                        <button onClick={saveSolved} style={s.btn}>
+                            💾 KAYDET VE İLERLE
+                        </button>
+                    </>
+                )}
+
+                {state.step === 2 && (
+                    <>
+                        <p style={s.hint}>📝 Bu konudan ne öğrendin? (Active Recall)</p>
+                        <textarea
+                            placeholder="3-5 cümle not al..."
+                            value={state.data.notes}
+                            onChange={(e) => setState({ ...state, data: { ...state.data, notes: e.target.value } })}
+                            style={s.textarea}
+                            rows={4}
+                        />
+                        <button onClick={saveNotes} style={s.btnSuccess}>
+                            ✅ KONUYU BİTİR
+                        </button>
+                    </>
+                )}
+            </div>
+
+            {/* Stats */}
+            {state.history.length > 0 && (
+                <div style={s.stats}>
+                    <div style={s.statItem}>
+                        <div style={s.statLabel}>Biten Konu</div>
+                        <div style={s.statValue}>{state.history.length}</div>
                     </div>
-                    <iframe
-                        style={styles.iframe}
-                        src={`https://www.youtube.com/embed?listType=search&list=${current.yt}`}
-                        allowFullScreen
-                        title={current.n}
-                    />
+                    <div style={s.statItem}>
+                        <div style={s.statLabel}>Toplam Soru</div>
+                        <div style={s.statValue}>{totalSolved}</div>
+                    </div>
                 </div>
             )}
-
-            {/* Main Content */}
-            <div style={styles.content}>
-                <div style={styles.progressBar}>
-                    <div style={{ ...styles.progressFill, width: `${completionPercentage}%` }} />
-                </div>
-                <div style={styles.progressText}>{completionPercentage}% TAMAMLANDI</div>
-
-                <div style={styles.subjectCard}>
-                    <span style={current.s ? styles.tagCritical : styles.tagNormal}>
-                        {current.s ? "★ YÜKSEK PUAN" : "○ TEMEL KONU"}
-                    </span>
-                    <h1 style={styles.title}>{current.n}</h1>
-                    <p style={styles.subtitle}>Sınavda ~{current.q} Soru | Hedef: {current.target} Soru</p>
-                </div>
-
-                <div style={styles.stepNav}>
-                    <div
-                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 0 ? styles.stepActive : {}) }}
-                        onClick={() => jumpToStep(0)}
-                    >
-                        <span style={styles.stepNumber}>1</span>
-                        <span style={styles.stepLabel}>İZLE</span>
-                    </div>
-                    <div style={styles.stepLine} />
-                    <div
-                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 1 ? styles.stepActive : {}) }}
-                        onClick={() => jumpToStep(1)}
-                    >
-                        <span style={styles.stepNumber}>2</span>
-                        <span style={styles.stepLabel}>ÇÖZ</span>
-                    </div>
-                    <div style={styles.stepLine} />
-                    <div
-                        style={{ ...styles.stepDot, ...(progress.stepIndex >= 2 ? styles.stepActive : {}) }}
-                        onClick={() => jumpToStep(2)}
-                    >
-                        <span style={styles.stepNumber}>3</span>
-                        <span style={styles.stepLabel}>BİTİR</span>
-                    </div>
-                </div>
-
-                <div style={styles.actionSection}>
-                    {progress.stepIndex === 0 && (
-                        <button onClick={handleOpenVideo} style={styles.mainBtn} className="btn-primary">
-                            🎬 KONU VİDEOSUNU İZLE
-                        </button>
-                    )}
-
-                    {progress.stepIndex === 1 && (
-                        <div style={styles.inputSection}>
-                            <p style={styles.targetText}>🎯 Hedef: {current.target} Soru</p>
-                            <input
-                                type="number"
-                                placeholder="Kaç soru çözdün?"
-                                value={questionCount}
-                                onChange={(e) => setQuestionCount(e.target.value)}
-                                style={styles.input}
-                            />
-                            <button onClick={handleSaveProgress} style={styles.mainBtn} className="btn-primary">
-                                💾 VERİYİ KAYDET
-                            </button>
-                        </div>
-                    )}
-
-                    {progress.stepIndex === 2 && (
-                        <button onClick={handleNextSubject} style={styles.finishBtn} className="btn-success">
-                            ✅ SONRAKİ KONUYA GEÇ
-                        </button>
-                    )}
-
-                    {/* Navigation Buttons */}
-                    <div style={styles.navButtons}>
-                        <button
-                            onClick={handlePreviousSubject}
-                            disabled={progress.subjectIndex === 0}
-                            style={{ ...styles.navBtn, ...(progress.subjectIndex === 0 ? styles.navBtnDisabled : {}) }}
-                        >
-                            ← ÖNCEKİ
-                        </button>
-                        <button
-                            onClick={handleNextSubject}
-                            disabled={progress.subjectIndex >= FULL_DB.length - 1}
-                            style={{ ...styles.navBtn, ...(progress.subjectIndex >= FULL_DB.length - 1 ? styles.navBtnDisabled : {}) }}
-                        >
-                            ATLA →
-                        </button>
-                    </div>
-                </div>
-            </div>
 
             <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .btn-primary:hover {
-          transform: scale(1.05);
-          box-shadow: 0 0 20px rgba(255,255,255,0.3);
-        }
-        .btn-primary:active {
-          transform: scale(0.98);
-        }
-        .btn-success:hover {
-          transform: scale(1.05);
-          box-shadow: 0 0 20px rgba(0,255,136,0.5);
-        }
-        .btn-success:active {
-          transform: scale(0.98);
-        }
+        button:active { transform: scale(0.97); }
       `}</style>
         </div>
     );
 }
 
-const styles = {
+const s = {
     body: {
-        height: '100vh',
+        minHeight: '100vh',
         backgroundColor: '#000',
         color: '#fff',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        overflow: 'hidden',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        padding: '20px',
         display: 'flex',
         flexDirection: 'column',
-    },
-    statusBar: {
-        padding: '50px 20px 15px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: '11px',
-        color: '#666',
-        borderBottom: '1px solid #111',
-        background: 'linear-gradient(180deg, #0a0a0a 0%, #000 100%)',
-    },
-    statusItem: {
-        animation: 'fadeIn 0.5s ease',
+        gap: '20px',
     },
     toast: {
         position: 'fixed',
         top: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        padding: '15px 30px',
-        borderRadius: '10px',
+        background: '#00ff88',
         color: '#000',
+        padding: '12px 24px',
+        borderRadius: '8px',
         fontWeight: 'bold',
         fontSize: '14px',
-        zIndex: 2000,
-        animation: 'fadeIn 0.3s ease',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-    },
-    videoOverlay: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#000',
         zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
         animation: 'fadeIn 0.3s ease',
     },
-    videoHeader: {
-        padding: '50px 20px 20px',
+    header: {
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '14px',
-        borderBottom: '1px solid #222',
+        fontSize: '11px',
+        color: '#666',
+        paddingTop: '30px',
     },
-    videoTitle: {
-        flex: 1,
-        fontWeight: 'bold',
-    },
-    closeBtn: {
-        background: 'linear-gradient(135deg, #333 0%, #222 100%)',
-        border: '1px solid #444',
-        color: '#fff',
-        padding: '10px 20px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-        transition: 'all 0.2s ease',
-    },
-    iframe: {
-        flex: 1,
-        border: 'none',
-    },
-    content: {
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        animation: 'slideIn 0.5s ease',
-    },
+    countdown: { fontWeight: 'bold' },
+    module: { color: '#00ff88' },
+    position: {},
     progressBar: {
         width: '100%',
-        maxWidth: '400px',
         height: '4px',
         backgroundColor: '#111',
         borderRadius: '2px',
         overflow: 'hidden',
-        marginBottom: '10px',
     },
     progressFill: {
         height: '100%',
-        background: 'linear-gradient(90deg, #00ff88 0%, #00cc66 100%)',
+        background: 'linear-gradient(90deg, #00ff88, #00cc66)',
         transition: 'width 0.5s ease',
     },
-    progressText: {
+    progressLabel: {
         fontSize: '10px',
         color: '#00ff88',
-        marginBottom: '30px',
-        letterSpacing: '2px',
-    },
-    subjectCard: {
         textAlign: 'center',
-        marginBottom: '40px',
+        letterSpacing: '1px',
+    },
+    subject: {
+        textAlign: 'center',
+        padding: '20px 0',
     },
     tagCritical: {
-        fontSize: '10px',
-        background: 'linear-gradient(135deg, #ffaa00 0%, #ff8800 100%)',
-        padding: '6px 12px',
-        borderRadius: '6px',
-        color: '#000',
-        fontWeight: 'bold',
         display: 'inline-block',
+        background: '#ffaa00',
+        color: '#000',
+        padding: '5px 12px',
+        borderRadius: '5px',
+        fontSize: '10px',
+        fontWeight: 'bold',
     },
     tagNormal: {
-        fontSize: '10px',
-        backgroundColor: '#1a1a1a',
-        padding: '6px 12px',
-        borderRadius: '6px',
-        color: '#888',
         display: 'inline-block',
+        background: '#1a1a1a',
+        color: '#666',
+        padding: '5px 12px',
+        borderRadius: '5px',
+        fontSize: '10px',
     },
     title: {
-        fontSize: '26px',
+        fontSize: '24px',
         fontWeight: 'bold',
-        margin: '15px 0',
-        background: 'linear-gradient(135deg, #fff 0%, #aaa 100%)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
+        margin: '15px 0 5px',
     },
-    subtitle: {
-        fontSize: '13px',
+    meta: {
+        fontSize: '12px',
         color: '#666',
     },
-    stepNav: {
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '40px',
-        gap: '0',
-    },
-    stepDot: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '5px',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
-    },
-    stepActive: {
-        transform: 'scale(1.1)',
-    },
-    stepNumber: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '50%',
-        backgroundColor: '#111',
-        border: '2px solid #00ff88',
+    steps: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '14px',
+        gap: '10px',
+        fontSize: '12px',
         fontWeight: 'bold',
+    },
+    stepActive: {
         color: '#00ff88',
     },
-    stepLabel: {
-        fontSize: '11px',
-        color: '#00ff88',
-        fontWeight: 'bold',
+    stepInactive: {
+        color: '#333',
     },
-    stepLine: {
-        width: '40px',
-        height: '2px',
-        backgroundColor: '#222',
-        margin: '0 5px',
-        marginBottom: '20px',
+    arrow: {
+        color: '#333',
     },
-    actionSection: {
-        width: '100%',
-        maxWidth: '350px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-    },
-    mainBtn: {
-        width: '100%',
-        padding: '18px',
-        background: 'linear-gradient(135deg, #fff 0%, #e0e0e0 100%)',
-        color: '#000',
-        border: 'none',
-        borderRadius: '12px',
-        fontWeight: 'bold',
-        fontSize: '16px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-    },
-    finishBtn: {
-        width: '100%',
-        padding: '18px',
-        background: 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)',
-        color: '#000',
-        border: 'none',
-        borderRadius: '12px',
-        fontWeight: 'bold',
-        fontSize: '16px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-    },
-    inputSection: {
+    actions: {
         display: 'flex',
         flexDirection: 'column',
         gap: '15px',
+        maxWidth: '400px',
+        margin: '0 auto',
+        width: '100%',
     },
-    targetText: {
+    btn: {
+        padding: '16px',
+        background: 'linear-gradient(135deg, #fff, #e0e0e0)',
+        color: '#000',
+        border: 'none',
+        borderRadius: '10px',
+        fontWeight: 'bold',
+        fontSize: '15px',
+        cursor: 'pointer',
+        transition: 'transform 0.1s',
+    },
+    btnSecondary: {
+        padding: '14px',
+        background: '#1a1a1a',
+        color: '#fff',
+        border: '1px solid #333',
+        borderRadius: '10px',
+        fontWeight: 'bold',
         fontSize: '14px',
+        cursor: 'pointer',
+        transition: 'transform 0.1s',
+    },
+    btnSuccess: {
+        padding: '16px',
+        background: 'linear-gradient(135deg, #00ff88, #00cc66)',
+        color: '#000',
+        border: 'none',
+        borderRadius: '10px',
+        fontWeight: 'bold',
+        fontSize: '15px',
+        cursor: 'pointer',
+        transition: 'transform 0.1s',
+    },
+    hint: {
+        fontSize: '13px',
         color: '#888',
         textAlign: 'center',
         margin: 0,
     },
     input: {
-        width: '100%',
         padding: '15px',
-        backgroundColor: '#0a0a0a',
+        background: '#0a0a0a',
         border: '2px solid #222',
         color: '#fff',
         borderRadius: '10px',
-        textAlign: 'center',
         fontSize: '18px',
         fontWeight: 'bold',
+        textAlign: 'center',
         outline: 'none',
-        transition: 'all 0.2s ease',
     },
-    navButtons: {
+    textarea: {
+        padding: '15px',
+        background: '#0a0a0a',
+        border: '2px solid #222',
+        color: '#fff',
+        borderRadius: '10px',
+        fontSize: '15px',
+        outline: 'none',
+        resize: 'vertical',
+        fontFamily: 'inherit',
+    },
+    stats: {
         display: 'flex',
-        gap: '10px',
+        gap: '15px',
+        justifyContent: 'center',
+        marginTop: '20px',
     },
-    navBtn: {
+    statItem: {
+        textAlign: 'center',
+        padding: '15px',
+        background: '#0a0a0a',
+        borderRadius: '10px',
         flex: 1,
-        padding: '12px',
-        backgroundColor: '#1a1a1a',
-        color: '#888',
-        border: '1px solid #333',
-        borderRadius: '8px',
-        fontSize: '12px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        maxWidth: '150px',
     },
-    navBtnDisabled: {
-        opacity: 0.3,
-        cursor: 'not-allowed',
+    statLabel: {
+        fontSize: '10px',
+        color: '#666',
+        marginBottom: '5px',
+    },
+    statValue: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: '#00ff88',
     },
 };
