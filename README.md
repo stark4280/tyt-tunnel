@@ -154,4 +154,3 @@ MIT
 
 > "Tünelde geriye dönüş yoktur. Sadece ileri."
 
-**KOMUTUNUZU BEKLİYORUM: BAŞLA**

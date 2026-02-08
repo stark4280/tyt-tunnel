@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Pen, Eraser, Trash2, Check, Lock, Search,
+    FileText, Layout, Zap, ChevronRight, Activity,
+    Maximize2, Minimize2, ArrowLeft, ArrowRight
+} from 'lucide-react';
 
-// --- DEFAULT GOOGLE DRIVE FILE IDS ---
+// --- DATA ---
 const DEFAULT_FILE_IDS = {
     BIYO_345: '1hVYQXCZ4Un_-2laHeRptr2nz2qbn8O3l',
     BIYO_BIYOTIK: '1kF2Za3aldzaKKZXDrTakQy5b1HxPFxxo',
@@ -23,7 +29,6 @@ const DEFAULT_FILE_IDS = {
     TURKCE_HIZ: '161bXwF7ZE_sJyCft0DamMzTZGlNM7oCj'
 };
 
-// --- 105-DAY INTERLEAVED CURRICULUM ---
 const CURRICULUM_105 = [
     { d: 1, c: "TÜRKÇE", n: "Sözcükte Anlam", t: 60, s: false, pdf: 'TURKCE_345' },
     { d: 2, c: "MATEMATİK", n: "Temel Kavramlar", t: 100, s: true, pdf: 'MAT_345' },
@@ -50,11 +55,12 @@ const CURRICULUM_105 = [
 ];
 
 export default function App() {
+    // --- STATE ---
     const [state, setState] = useState(() => {
         const saved = localStorage.getItem('citadel_v13_pdfjs');
         return saved ? JSON.parse(saved) : {
             dayIdx: 0,
-            phase: 0,
+            phase: 0, // 0: Video, 1: PDF, 2: Complete
             videoId: null,
             history: [],
             currentPage: 1
@@ -66,15 +72,16 @@ export default function App() {
     const [pdfDoc, setPdfDoc] = useState(null);
     const [loading, setLoading] = useState(false);
     const [numPages, setNumPages] = useState(0);
+    const [focusMode, setFocusMode] = useState(false);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
+    // --- EFFECTS ---
     useEffect(() => {
         localStorage.setItem('citadel_v13_pdfjs', JSON.stringify(state));
     }, [state]);
 
-    // Initialize PDF.js worker
     useEffect(() => {
         if (window.pdfjsLib) {
             window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -82,9 +89,10 @@ export default function App() {
         }
     }, []);
 
+    // --- HELPERS ---
     const showToast = (msg) => {
         setToast(msg);
-        setTimeout(() => setToast(null), 2500);
+        setTimeout(() => setToast(null), 3000);
     };
 
     const extractVideoID = (url) => {
@@ -92,6 +100,7 @@ export default function App() {
         return match ? match[1] : null;
     };
 
+    // --- HANDLERS ---
     const handleVideoLock = () => {
         const id = extractVideoID(url);
         if (!id) {
@@ -100,106 +109,83 @@ export default function App() {
         }
         setState({ ...state, videoId: id, phase: 1 });
         setUrl('');
+        setFocusMode(true);
         showToast("🔒 Video kilitlendi");
     };
 
     const openPDF = async () => {
-        console.log("🔍 PDF butonu tıklandı");
-
         const current = CURRICULUM_105[state.dayIdx];
         const fileId = DEFAULT_FILE_IDS[current.pdf];
 
         if (!fileId) {
-            console.error("❌ File ID bulunamadı:", current.pdf);
             showToast("⚠️ PDF bulunamadı!");
             return;
         }
 
         if (!window.pdfjsLib) {
-            console.error("❌ PDF.js yüklenmemiş!");
-            showToast("⚠️ PDF.js kütüphanesi yüklenmedi, sayfa yenileniyor...");
+            showToast("⚠️ PDF.js bekleniyor...");
             setTimeout(() => window.location.reload(), 2000);
             return;
         }
 
-        console.log("✅ PDF.js hazır, File ID:", fileId);
-
         setLoading(true);
-        showToast("📥 PDF yükleniyor...");
+        showToast("📥 PDF İndiriliyor...");
 
         try {
-            const downloadUrl = `https://docs.google.com/uc?id=${fileId}&export=download`;
-            console.log("📥 İndirme başladı:", downloadUrl);
+            const driveUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(driveUrl)}`;
 
-            const response = await fetch(downloadUrl, { mode: 'cors' });
-            console.log("📦 Response status:", response.status);
-
-            if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Proxy fetch failed');
 
             const arrayBuffer = await response.arrayBuffer();
-            console.log("✅ ArrayBuffer alındı, boyut:", arrayBuffer.byteLength);
-
-            // Load PDF with PDF.js
             const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
             const pdf = await loadingTask.promise;
-            console.log("✅ PDF yüklendi, sayfa sayısı:", pdf.numPages);
 
             setPdfDoc(pdf);
             setNumPages(pdf.numPages);
             setState({ ...state, currentPage: 1 });
+            setFocusMode(true);
 
-            showToast(`✅ PDF yüklendi (${pdf.numPages} sayfa)`);
+            showToast(`✅ PDF Hazır (${pdf.numPages} Sayfa)`);
+            setTimeout(() => renderPage(pdf, 1), 100);
 
-            // Render first page
-            await renderPage(pdf, 1);
         } catch (error) {
-            console.error("❌ PDF yükleme hatası:", error);
-            showToast(`❌ Hata: ${error.message}`);
+            console.error("Proxy error:", error);
+            showToast("⚠️ Proxy hatası! Yeni sekmede açılıyor...");
+            window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
         } finally {
             setLoading(false);
         }
     };
 
-
     const renderPage = async (pdf, pageNum) => {
+        if (!pdf || !canvasRef.current) return;
+
         const page = await pdf.getPage(pageNum);
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
 
-        // High-DPI for tablets (2.0 scale)
         const viewport = page.getViewport({ scale: 2.0 });
 
-        // Set canvas dimensions
         canvas.width = viewport.width;
         canvas.height = viewport.height;
 
-        // Fit to container width
         if (containerRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
             canvas.style.width = `${containerWidth}px`;
             canvas.style.height = `${(viewport.height / viewport.width) * containerWidth}px`;
         }
 
-        // Render PDF page
-        const renderContext = {
+        await page.render({
             canvasContext: context,
             viewport: viewport
-        };
-
-        await page.render(renderContext).promise;
+        }).promise;
     };
 
-    const nextPage = () => {
-        if (state.currentPage < numPages) {
-            const newPage = state.currentPage + 1;
-            setState({ ...state, currentPage: newPage });
-            renderPage(pdfDoc, newPage);
-        }
-    };
-
-    const prevPage = () => {
-        if (state.currentPage > 1) {
-            const newPage = state.currentPage - 1;
+    const changePage = (delta) => {
+        const newPage = state.currentPage + delta;
+        if (newPage >= 1 && newPage <= numPages) {
             setState({ ...state, currentPage: newPage });
             renderPage(pdfDoc, newPage);
         }
@@ -207,6 +193,7 @@ export default function App() {
 
     const handleDayComplete = () => {
         setPdfDoc(null);
+        setFocusMode(false);
 
         const record = {
             day: CURRICULUM_105[state.dayIdx].d,
@@ -233,162 +220,299 @@ export default function App() {
     const current = CURRICULUM_105[state.dayIdx];
     const progress = Math.round((state.dayIdx / 105) * 100);
 
+    // --- RENDER ---
     return (
-        <div style={s.base}>
-            {toast && <div style={s.toast}>{toast}</div>}
+        <div className="h-screen w-full bg-obsidian text-white flex overflow-hidden font-sans selection:bg-accent selection:text-black">
 
-            <div style={s.header}>
-                <span style={s.dayCounter}>GÜN {current.d} / 105</span>
-                <span style={s.progressLabel}>{progress}%</span>
-            </div>
-
-            <div style={s.main}>
-                <div style={s.subjectBox}>
-                    <div style={current.s ? s.badgeCrit : s.badgeNorm}>
-                        {current.s ? "★ KRİTİK" : "○ BASE"}
-                    </div>
-                    <div style={s.category}>{current.c}</div>
-                    <h1 style={s.topicTitle}>{current.n}</h1>
-                    {!current.isRest && <p style={s.target}>📖 {current.pdf} | 🎯 {current.t} Soru</p>}
-                </div>
-
-                <div style={s.actions}>
-                    {!current.isRest ? (
-                        <>
-                            {/* PHASE 0: VIDEO */}
-                            {state.phase === 0 && (
-                                <>
-                                    <button
-                                        style={s.searchBtn}
-                                        onClick={() => window.open(`https://www.youtube.com/results?search_query=TYT+${current.c}+${current.n}+konu+anlatimi`, '_blank')}
-                                    >
-                                        🔍 VİDEOYU BUL
-                                    </button>
-                                    <input
-                                        style={s.inputField}
-                                        placeholder="Video linkini yapıştır..."
-                                        value={url}
-                                        onChange={(e) => setUrl(e.target.value)}
-                                    />
-                                    <button style={s.lockBtn} onClick={handleVideoLock}>
-                                        🔒 VİDEOYU KİLİTLE
-                                    </button>
-                                </>
-                            )}
-
-                            {/* PHASE 1: VIDEO PLAYER + PDF */}
-                            {state.phase === 1 && (
-                                <>
-                                    <div style={s.videoContainer}>
-                                        <iframe
-                                            src={`https://www.youtube-nocookie.com/embed/${state.videoId}`}
-                                            style={s.iframe}
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                            title="YouTube Video"
-                                        />
-                                    </div>
-
-                                    {!pdfDoc ? (
-                                        <button style={s.pdfBtn} onClick={openPDF} disabled={loading}>
-                                            {loading ? "⏳ Yükleniyor..." : "📖 PDF'İ AÇ (PDF.js HD)"}
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <div style={s.pdfViewerBox} ref={containerRef}>
-                                                <canvas ref={canvasRef} style={s.canvas} />
-                                            </div>
-
-                                            <div style={s.pdfControls}>
-                                                <button style={s.navBtn} onClick={prevPage} disabled={state.currentPage === 1}>
-                                                    ◀ Önceki
-                                                </button>
-                                                <span style={s.pageInfo}>
-                                                    Sayfa {state.currentPage} / {numPages}
-                                                </span>
-                                                <button style={s.navBtn} onClick={nextPage} disabled={state.currentPage === numPages}>
-                                                    İleri ▶
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <button style={s.doneBtn} onClick={() => setState({ ...state, phase: 2 })}>
-                                        ✅ ÇALIŞMAYI BİTİRDİM
-                                    </button>
-                                </>
-                            )}
-
-                            {/* PHASE 2: COMPLETE */}
-                            {state.phase === 2 && (
-                                <button style={s.finishBtn} onClick={handleDayComplete}>
-                                    ✅ GÜNÜ TAMAMLA
-                                </button>
-                            )}
-                        </>
-                    ) : (
-                        <button style={s.restBtn} onClick={handleDayComplete}>
-                            ⏭ ANALİZ YAPILDI
-                        </button>
-                    )}
-                </div>
-
-                {state.history.length > 0 && (
-                    <div style={s.stats}>
-                        <div style={s.stat}>
-                            <div style={s.statLabel}>Tamamlanan</div>
-                            <div style={s.statValue}>{state.history.length}</div>
-                        </div>
-                        <div style={s.stat}>
-                            <div style={s.statLabel}>Kalan</div>
-                            <div style={s.statValue}>{105 - state.dayIdx}</div>
-                        </div>
-                    </div>
+            {/* TOAST */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -50 }}
+                        className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-surface border border-accent/30 text-accent px-6 py-3 rounded-full shadow-[0_0_20px_rgba(0,255,0,0.2)] z-50 backdrop-blur-md flex items-center gap-3 font-medium"
+                    >
+                        <Activity size={18} />
+                        {toast}
+                    </motion.div>
                 )}
+            </AnimatePresence>
+
+            {/* SIDEBAR (ROADMAP) */}
+            <motion.div
+                className="w-72 bg-surface/50 border-r border-border flex flex-col backdrop-blur-sm z-20"
+                initial={{ x: -300 }}
+                animate={{ x: focusMode ? -300 : 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+                <div className="p-6 border-b border-border">
+                    <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                        <Layout className="text-accent" /> THE CITADEL
+                    </h2>
+                    <p className="text-xs text-secondary mt-1 tracking-widest">TYT 2026 ROADMAP</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    {CURRICULUM_105.map((item, idx) => {
+                        const isPast = idx < state.dayIdx;
+                        const isCurrent = idx === state.dayIdx;
+
+                        return (
+                            <div
+                                key={idx}
+                                className={`p-3 rounded-lg border transition-all duration-300 ${isCurrent
+                                        ? 'bg-accent/10 border-accent/50 shadow-[0_0_15px_rgba(0,255,0,0.1)]'
+                                        : isPast
+                                            ? 'bg-surface border-border opacity-40'
+                                            : 'bg-transparent border-transparent opacity-30 hover:opacity-50'
+                                    }`}
+                            >
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className={`text-[10px] font-bold ${isCurrent ? 'text-accent' : 'text-secondary'}`}>
+                                        GÜN {item.d}
+                                    </span>
+                                    {isPast && <Check size={12} className="text-accent" />}
+                                </div>
+                                <h3 className={`text-sm font-medium leading-tight ${isCurrent ? 'text-white' : 'text-gray-400'}`}>
+                                    {item.n}
+                                </h3>
+                                <div className="text-[10px] text-secondary mt-1">{item.c}</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+
+            {/* MAIN CONTENT (FOCUS ZONE) */}
+            <div className="flex-1 flex flex-col relative h-full">
+
+                {/* HEADER */}
+                <header className="h-16 border-b border-border bg-surface/30 backdrop-blur flex items-center px-8 justify-between z-10">
+                    <div className="flex items-center gap-4">
+                        <motion.button
+                            onClick={() => setFocusMode(!focusMode)}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-2 rounded-full hover:bg-white/5 text-secondary hover:text-white transition-colors"
+                        >
+                            {focusMode ? <Maximize2 size={20} /> : <Minimize2 size={20} />}
+                        </motion.button>
+                        <div>
+                            <h1 className="text-lg font-bold tracking-tight">
+                                {current.isRest ? "ANALİZ GÜNÜ" : `${current.c} • ${current.n}`}
+                            </h1>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[10px] text-secondary uppercase tracking-widest">İlerleme</span>
+                            <span className="text-accent font-mono font-bold">{progress}%</span>
+                        </div>
+                        <div className="w-32 h-1 bg-surface rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-accent shadow-[0_0_10px_#00ff00]"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 1 }}
+                            />
+                        </div>
+                    </div>
+                </header>
+
+                {/* CONTENT STAGE */}
+                <div className="flex-1 overflow-hidden relative p-0 flex flex-col items-center justify-center bg-obsidian">
+
+                    <AnimatePresence mode="wait">
+                        {!current.isRest ? (
+                            <motion.div
+                                key="study-content"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.05 }}
+                                transition={{ duration: 0.4 }}
+                                className="w-full h-full max-w-6xl p-6 flex flex-col gap-6"
+                            >
+                                {/* PHASE 0: PREPARATION */}
+                                {state.phase === 0 && (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
+                                        <div className="space-y-4">
+                                            <motion.div
+                                                className="w-24 h-24 bg-accent/10 rounded-full flex items-center justify-center mx-auto border border-accent/20"
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                            >
+                                                <Zap size={40} className="text-accent" />
+                                            </motion.div>
+                                            <h2 className="text-4xl font-bold tracking-tighter">MİSYON HAZIRLIĞI</h2>
+                                            <p className="text-secondary max-w-md mx-auto">
+                                                Bugünün hedefi: {current.t} Soru çözümü ve konu anlatımı.
+                                                Başlamak için video kilidini aktif et.
+                                            </p>
+                                        </div>
+
+                                        <div className="w-full max-w-md space-y-4">
+                                            <button
+                                                onClick={() => window.open(`https://www.youtube.com/results?search_query=TYT+${current.c}+${current.n}+konu+anlatimi`, '_blank')}
+                                                className="w-full py-4 rounded-lg border border-border bg-surface hover:bg-white/5 hover:border-white/20 text-secondary hover:text-white transition-all flex items-center justify-center gap-3 group"
+                                            >
+                                                <Search size={18} className="group-hover:scale-110 transition-transform" />
+                                                Video Araştır
+                                            </button>
+
+                                            <div className="relative group">
+                                                <input
+                                                    type="text"
+                                                    placeholder="YouTube linkini yapıştır..."
+                                                    value={url}
+                                                    onChange={(e) => setUrl(e.target.value)}
+                                                    className="w-full py-4 px-6 bg-surface border border-border rounded-lg focus:outline-none focus:border-accent/50 text-white placeholder-secondary/50 transition-all font-mono text-sm text-center"
+                                                />
+                                                <div className="absolute inset-0 rounded-lg bg-accent/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+                                            </div>
+
+                                            <motion.button
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={handleVideoLock}
+                                                className="w-full py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                            >
+                                                <Lock size={18} />
+                                                SİSTEMİ KİLİTLE
+                                            </motion.button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* PHASE 1 & 2: ACTION */}
+                                {state.phase >= 1 && (
+                                    <div className="flex-1 flex flex-col gap-6 h-full">
+
+                                        {/* VIDEO SECTION */}
+                                        {state.videoId && (
+                                            <motion.div
+                                                layoutId="video-container"
+                                                className={`w-full bg-black rounded-2xl overflow-hidden border border-border shadow-2xl shrink-0 transition-all duration-500 ${pdfDoc ? 'h-48 opacity-80 hover:opacity-100' : 'flex-1'
+                                                    }`}
+                                            >
+                                                <iframe
+                                                    src={`https://www.youtube-nocookie.com/embed/${state.videoId}`}
+                                                    className="w-full h-full object-cover"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                    title="Mission Briefing"
+                                                />
+                                            </motion.div>
+                                        )}
+
+                                        {/* PDF SECTION */}
+                                        <div className="flex-1 relative bg-surface/30 rounded-2xl border border-border flex flex-col overflow-hidden backdrop-blur-sm">
+                                            {!pdfDoc ? (
+                                                <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                                                    <FileText size={64} className="text-surface drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] opacity-20" />
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={openPDF}
+                                                        disabled={loading}
+                                                        className="px-8 py-4 bg-accent text-black font-bold rounded-xl shadow-[0_0_30px_rgba(0,255,0,0.3)] hover:shadow-[0_0_50px_rgba(0,255,0,0.5)] transition-all flex items-center gap-3"
+                                                    >
+                                                        {loading ? (
+                                                            <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                        ) : (
+                                                            <Pen size={20} />
+                                                        )}
+                                                        {loading ? "VERİ ÇEKİLİYOR..." : "DİJİTAL KİTAPLIĞI AÇ"}
+                                                    </motion.button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {/* Floating Toolbar */}
+                                                    <motion.div
+                                                        initial={{ y: 20, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-surface/90 border border-white/10 backdrop-blur-xl px-4 py-2 rounded-2xl shadow-2xl z-30 flex items-center gap-4"
+                                                    >
+                                                        <button
+                                                            onClick={() => changePage(-1)}
+                                                            disabled={state.currentPage === 1}
+                                                            className="p-3 rounded-xl hover:bg-white/10 text-white disabled:opacity-30 transition-colors"
+                                                        >
+                                                            <ArrowLeft size={20} />
+                                                        </button>
+                                                        <span className="font-mono text-sm tracking-wider text-accent min-w-[80px] text-center">
+                                                            {state.currentPage} / {numPages}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => changePage(1)}
+                                                            disabled={state.currentPage === numPages}
+                                                            className="p-3 rounded-xl hover:bg-white/10 text-white disabled:opacity-30 transition-colors"
+                                                        >
+                                                            <ArrowRight size={20} />
+                                                        </button>
+
+                                                        <div className="w-px h-6 bg-white/10 mx-2" />
+
+                                                        <button
+                                                            onClick={() => setState({ ...state, phase: 2 })}
+                                                            className="px-4 py-2 bg-accent/20 text-accent hover:bg-accent hover:text-black rounded-lg text-xs font-bold transition-all"
+                                                        >
+                                                            TAMAMLA
+                                                        </button>
+                                                    </motion.div>
+
+                                                    {/* Viewer */}
+                                                    <div className="flex-1 overflow-auto custom-scrollbar p-6 flex justify-center bg-zinc-900/50" ref={containerRef}>
+                                                        <canvas ref={canvasRef} className="shadow-2xl rounded-lg max-w-full" />
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {state.phase === 2 && (
+                                            <motion.button
+                                                initial={{ scale: 0.9, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                whileHover={{ scale: 1.02 }}
+                                                onClick={handleDayComplete}
+                                                className="w-full py-6 bg-accent text-black text-xl font-black tracking-widest uppercase rounded-2xl shadow-[0_0_60px_rgba(0,255,0,0.4)] hover:shadow-[0_0_80px_rgba(0,255,0,0.6)] transition-all flex items-center justify-center gap-4"
+                                            >
+                                                <Check size={28} strokeWidth={3} />
+                                                GÖREVİ TAMAMLA
+                                            </motion.button>
+                                        )}
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="rest-day"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="text-center space-y-8"
+                            >
+                                <div className="inline-block p-6 rounded-full bg-white/5 border border-white/10">
+                                    <Activity size={48} className="text-accent" />
+                                </div>
+                                <div>
+                                    <h2 className="text-4xl font-bold mb-2">SİSTEM ANALİZİ</h2>
+                                    <p className="text-secondary">Verilerin işlendiği ve zihnin toparlandığı gün.</p>
+                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    onClick={handleDayComplete}
+                                    className="px-10 py-4 bg-surface border border-accent/30 text-accent rounded-xl font-bold hover:bg-accent hover:text-black transition-colors"
+                                >
+                                    ANALİZ TAMAMLANDI
+                                </motion.button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         </div>
     );
 }
 
-const s = {
-    base: { minHeight: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column' },
-
-    toast: { position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#00ff88', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', zIndex: 1000 },
-    header: { padding: '25px 30px', borderBottom: '1px solid #111', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666' },
-    dayCounter: { fontWeight: 'bold', color: '#00ff88' },
-    progressLabel: {},
-
-    main: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', maxWidth: '1000px', margin: '0 auto', width: '100%' },
-    subjectBox: { textAlign: 'center', marginBottom: '30px' },
-    badgeCrit: { display: 'inline-block', background: '#ffaa00', color: '#000', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', marginBottom: '12px' },
-    badgeNorm: { display: 'inline-block', background: '#1a1a1a', color: '#666', padding: '6px 14px', borderRadius: '6px', fontSize: '10px', marginBottom: '12px' },
-    category: { fontSize: '13px', color: '#00ff88', marginBottom: '10px', letterSpacing: '2px' },
-    topicTitle: { fontSize: '28px', fontWeight: 'bold', margin: '10px 0' },
-    target: { fontSize: '13px', color: '#888' },
-
-    actions: { width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' },
-    searchBtn: { padding: '14px', background: '#1a1a1a', border: '1px solid #333', color: '#888', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' },
-    inputField: { padding: '16px', background: '#0a0a0a', border: '2px solid #222', color: '#fff', borderRadius: '10px', fontSize: '15px', textAlign: 'center', outline: 'none' },
-    lockBtn: { padding: '18px', background: 'linear-gradient(135deg, #fff, #e0e0e0)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-
-    videoContainer: { width: '100%', aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '2px solid #222' },
-    iframe: { width: '100%', height: '100%', border: 'none' },
-
-    pdfBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-
-    pdfViewerBox: { width: '100%', borderRadius: '10px', overflow: 'auto', marginBottom: '15px', border: '2px solid #222', background: '#1a1a1a', maxHeight: '70vh' },
-    canvas: { display: 'block', margin: '0 auto' },
-
-    pdfControls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: '#1a1a1a', borderRadius: '10px', marginBottom: '15px' },
-    navBtn: { padding: '10px 20px', background: '#0a0a0a', border: '1px solid #333', color: '#00ff88', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' },
-    pageInfo: { fontSize: '14px', color: '#888' },
-
-    doneBtn: { padding: '18px', background: 'linear-gradient(135deg, #ffaa00, #ff8800)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-    finishBtn: { padding: '18px', background: 'linear-gradient(135deg, #00ff88, #00cc66)', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-    restBtn: { padding: '18px', background: '#1a1a1a', border: '1px solid #333', color: '#00ff88', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-
-    stats: { display: 'flex', gap: '20px', marginTop: '30px' },
-    stat: { textAlign: 'center', padding: '20px', background: '#0a0a0a', borderRadius: '10px', minWidth: '120px' },
-    statLabel: { fontSize: '10px', color: '#666', marginBottom: '8px' },
-    statValue: { fontSize: '24px', fontWeight: 'bold', color: '#00ff88' }
-};
+const s = {}; // Style object deprecated in favor of Tailwind classes
