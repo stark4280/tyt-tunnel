@@ -2,3 +2,23 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# Test dosyaları
+*.pdf
+test*.pdf
+
+# Backup klasörleri
+*backup*
+*-backup-*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Firebase (config dosyasını paylaşma!)
+# src/firebase/config.js

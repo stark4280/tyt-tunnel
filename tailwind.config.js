@@ -7,14 +7,19 @@ export default {
     theme: {
         extend: {
             colors: {
-                obsidian: '#050505',
-                surface: '#111111',
-                accent: '#00FF00', // Emerald Green
-                secondary: '#888888',
-                border: '#222222',
+                // Yeni modern tema - Mavi-Mor
+                primary: '#667eea',      // Soft Blue
+                secondary: '#764ba2',    // Purple
+                accent: '#f093fb',       // Pink accent
+                surface: 'rgba(255, 255, 255, 0.1)',
+                border: 'rgba(255, 255, 255, 0.2)',
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+            },
+            backgroundImage: {
+                'gradient-main': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'gradient-card': 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
             },
         },
     },

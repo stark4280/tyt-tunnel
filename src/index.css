@@ -3,29 +3,145 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', sans-serif;
-  background-color: #050505;
-  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Tema değişkenleri (theme.js tarafından set edilir) */
+  --color-primary: #667eea;
+  --color-primary-light: #8b9aff;
+  --color-primary-dark: #5568d3;
+  --color-accent: #f093fb;
+  --color-surface: rgba(255, 255, 255, 0.1);
+  --color-border: rgba(255, 255, 255, 0.2);
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--color-text);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #050505;
-  overflow: hidden; /* App-like feel */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-text);
 }
 
-/* Custom Scrollbar for Sidebar */
+/* Fallback Styles */
+body,
+#root {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--color-text);
+  height: 100vh;
+  width: 100%;
+  margin: 0;
+}
+
+/* Tema renkleri için utility classes */
+.text-primary { color: var(--color-primary) !important; }
+.text-primary-light { color: var(--color-primary-light) !important; }
+.text-primary-dark { color: var(--color-primary-dark) !important; }
+.bg-primary { background-color: var(--color-primary) !important; }
+.bg-primary-light { background-color: var(--color-primary-light) !important; }
+.border-primary { border-color: var(--color-primary) !important; }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  opacity: 0.4;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  opacity: 0.6;
+}
+
+/* Global Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: rgba(0, 0, 0, 0.1);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Tablet Optimizations */
+@media (max-width: 1024px) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  body {
+    font-size: 16px;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+  
+  .p-6 {
+    padding: 1rem;
+  }
+}
+
+/* Prevent text selection on UI elements */
+button, .no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  opacity: 0.5;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: var(--color-surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border);
+}
+
+/* Soft shadows */
+.soft-shadow {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
 }

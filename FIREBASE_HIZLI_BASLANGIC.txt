@@ -1,0 +1,37 @@
+🔥 FIREBASE HIZLI BAŞLANGIÇ
+================================
+
+ŞİMDİ NE YAPMALISIN:
+
+1. Firebase Console'a git: https://console.firebase.google.com/
+2. "Add project" → Proje adı: tyt-tunnel
+3. "Realtime Database" oluştur → Location: europe-west1 → Test mode
+4. "Authentication" → Anonymous'u aktifleştir
+5. Project Settings → Web app ekle → Config'i kopyala
+6. src/firebase/config.js dosyasını aç
+7. firebaseConfig objesindeki "BURAYA_..._GELECEK" yazan yerleri değiştir
+8. Kaydet ve uygulamayı başlat!
+
+DETAYLI REHBER:
+docs/FIREBASE_KURULUM.md dosyasını oku (ekran görüntülü anlatım)
+
+SORUN ÇIKARSA:
+- Config değerlerini kontrol et
+- Browser console'a bak (F12)
+- İnternet bağlantını kontrol et
+
+ÜCRETSİZ KOTA:
+- 1GB depolama
+- 10GB/ay transfer
+- Tek kullanıcı için fazlasıyla yeterli!
+
+KULLANIM:
+1. Masaüstünde: Dashboard → "Senkronizasyonu Başlat" → "Yükle"
+2. Tablet'te: Dashboard → "Senkronizasyonu Başlat" → "İndir"
+3. Artık her iki cihazda da veriler senkron!
+
+GÜVENLİK:
+- Her cihaz benzersiz ID alır
+- Sadece kendi verilerine erişebilirsin
+- Tüm iletişim şifreli (HTTPS)
+- Config dosyası GitHub'a yüklenmez (.gitignore)
