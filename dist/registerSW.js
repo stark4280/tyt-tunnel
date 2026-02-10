@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/tyt-tunnel/sw.js', { scope: '/tyt-tunnel/' })})}

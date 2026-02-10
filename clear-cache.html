@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cache Temizle - The Citadel V2</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #050505;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+        }
+        h1 {
+            color: #22c55e;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #9ca3af;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #22c55e;
+            color: black;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .success {
+            color: #22c55e;
+        }
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Cache Temizle</h1>
+        <p>Bozuk PDF cache'ini temizleyip yeniden başlatın.</p>
+        
+        <button id="clearBtn" onclick="clearCache()">Cache'i Temizle</button>
+        
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function clearCache() {
+            const btn = document.getElementById('clearBtn');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            status.style.display = 'block';
+            status.innerHTML = '⏳ Temizleniyor...';
+            
+            try {
+                // 1. localStorage temizle
+                const keys = ['citadel_v2_progress', 'citadel_v2_settings'];
+                let lsCleared = 0;
+                keys.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        lsCleared++;
+                    }
+                });
+                
+                // 2. IndexedDB temizle
+                const dbName = 'citadel_store';
+                const request = indexedDB.open(dbName);
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const tx = db.transaction(['pdfs', 'ink'], 'readwrite');
+                    
+                    tx.objectStore('pdfs').clear();
+                    tx.objectStore('ink').clear();
+                    
+                    tx.oncomplete = () => {
+                        status.innerHTML = `
+                            <div class="success">
+                                ✅ Cache temizlendi!<br><br>
+                                📦 IndexedDB: Temizlendi<br>
+                                💾 localStorage: ${lsCleared} kayıt korundu<br><br>
+                                🔄 Sayfa 3 saniye içinde yenilenecek...
+                            </div>
+                        `;
+                        
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 3000);
+                    };
+                    
+                    tx.onerror = () => {
+                        throw new Error('IndexedDB temizleme hatası');
+                    };
+                };
+                
+                request.onerror = () => {
+                    throw new Error('IndexedDB açılamadı');
+                };
+                
+            } catch (error) {
+                status.innerHTML = `
+                    <div class="error">
+                        ❌ Hata: ${error.message}<br><br>
+                        Manuel temizlik:<br>
+                        1. F12 → Application → Storage<br>
+                        2. "Clear site data" tıklayın<br>
+                        3. Sayfayı yenileyin
+                    </div>
+                `;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
